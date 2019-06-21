@@ -120,11 +120,6 @@ impl_unsafe_marker_for_array!(
   25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024
 );
 
-/// As [try_cast_slice](try_cast_slice), but unwraps the result for you.
-pub fn cast_slice<A: Pod, B: Pod>(s: &[A]) -> &[B] {
-  try_cast_slice(s).unwrap()
-}
-
 /// The things that can go wrong when casting a slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SliceCastError {
@@ -145,6 +140,7 @@ pub enum SliceCastError {
 /// Try to convert a slice of one type into another.
 ///
 /// * `input.as_ptr() as usize == output.as_ptr() as usize`
+/// * `input.len() * size_of::<A>() == output.len() * size_of::<B>()`
 ///
 /// ## Failure
 ///
@@ -179,4 +175,9 @@ pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], SliceCastError> {
       }
     }
   }
+}
+
+/// As [try_cast_slice](try_cast_slice), but unwraps the result for you.
+pub fn cast_slice<A: Pod, B: Pod>(s: &[A]) -> &[B] {
+  try_cast_slice(s).unwrap()
 }
