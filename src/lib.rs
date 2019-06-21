@@ -9,6 +9,14 @@ use core::{
   ptr::NonNull,
 };
 
+/// Implements an unsafe marker trait on an array type if the element type
+/// also supports that marker trait.
+///
+/// Syntax:
+///
+/// ```txt
+/// impl_unsafe_marker_for_array!(TraitName, 0, 1, 2, 3, ...);
+/// ```
 macro_rules! impl_unsafe_marker_for_array {
   ( $marker:ident , $( $n:expr ),* ) => {
     $(unsafe impl<T> $marker for [T; $n] where T: $marker {})*
@@ -28,7 +36,8 @@ pub unsafe trait Zeroable: Sized {
   ///
   /// This is a trait method so that you can write `MyType::zeroed()` in your
   /// code. It is a contract of this trait that if you implement it on your type
-  /// you _must not_ override this method.
+  /// you _must not_ override this method. In the future this trait will become
+  /// a `#[marker]` trait so that this is absolute. Until then just don't do it.
   fn zeroed() -> Self {
     unsafe { core::mem::zeroed() }
   }
@@ -204,9 +213,8 @@ pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
 
 /// Re-interprets a reference as a byte slice reference.
 ///
-/// ## Panics
-///
-/// * If `T` is a ZST.
+/// Any ZST becomes an empty slice, and in that case the pointer value of that
+/// empty slice might not match the pointer value of the input reference.
 pub fn bytes_of<T: Pod>(t: &T) -> &[u8] {
-  cast_slice::<T, u8>(core::slice::from_ref(t))
+  try_cast_slice::<T, u8>(core::slice::from_ref(t)).unwrap_or(&[])
 }
