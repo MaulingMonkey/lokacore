@@ -125,10 +125,20 @@ pub fn cast_slice<A: Pod, B: Pod>(s: &[A]) -> &[B] {
   try_cast_slice(s).unwrap()
 }
 
+/// The things that can go wrong when casting a slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SliceCastError {
+  /// You tried to cast a slice to an element type with a higher alignment
+  /// requirement but the slice wasn't aligned.
   TargetAlignmentGreaterAndInputNotAligned,
+  /// You tried to cast between a zero-sized type and a non-zero-sized type.
+  /// Because the output slice resizes based on the input and output types, it's
+  /// fairly nonsensical to throw a ZST into the mix. You can go from a ZST to
+  /// another ZST, if you want.
   CantConvertBetweenZSTAndNonZST,
+  /// If the element size changes then the output slice changes length
+  /// accordingly. If the output slice wouldn't be a whole number of elements
+  /// then the conversion fails.
   OutputSliceWouldHaveSlop,
 }
 
