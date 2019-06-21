@@ -201,3 +201,12 @@ pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], Slice
 pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
   try_cast_slice(a).unwrap()
 }
+
+/// Re-interprets a reference as a byte slice reference.
+///
+/// ## Panics
+///
+/// * If `T` is a ZST.
+pub fn bytes_of<T: Pod>(t: &T) -> &[u8] {
+  cast_slice::<T, u8>(core::slice::from_ref(t))
+}
