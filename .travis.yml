@@ -1,0 +1,28 @@
+language: rust
+sudo: false
+git:
+  quiet: true
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+os:
+  - linux
+  - osx
+
+branches:
+  only:
+    - staging
+    - trying
+    - master
+    - dev
+    - lokathor
+
+matrix:
+  fast_finish: true
+
+script:
+  - cargo -vv build
+  - cargo -vv test
