@@ -155,16 +155,11 @@ pub enum SliceCastError {
 ///   and a non-ZST.
 pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], SliceCastError> {
   if align_of::<B>() > align_of::<A>() && (a.as_ptr() as *const A as usize) % align_of::<B>() != 0 {
-    // If the alignment requirement goes up then we check for possible
-    // mis-alignment and error out if that's the case.
     Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
   } else {
     if size_of::<B>() == size_of::<A>() {
-      // If the sizes are the same this is a totally plain cast, even for ZST
       Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, a.len()) })
     } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
-      // If the sizes aren't the same and one of them is a ZST, this is
-      // hopeless.
       Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
     } else {
       if core::mem::size_of_val(a) % size_of::<B>() != 0 {
