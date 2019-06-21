@@ -178,6 +178,6 @@ pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], SliceCastError> {
 }
 
 /// As [try_cast_slice](try_cast_slice), but unwraps the result for you.
-pub fn cast_slice<A: Pod, B: Pod>(s: &[A]) -> &[B] {
-  try_cast_slice(s).unwrap()
+pub fn cast_slice<A: Pod, B: Pod>(a: &[A]) -> &[B] {
+  try_cast_slice(a).unwrap()
 }
