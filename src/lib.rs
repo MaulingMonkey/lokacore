@@ -176,3 +176,28 @@ pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], SliceCastError> {
 pub fn cast_slice<A: Pod, B: Pod>(a: &[A]) -> &[B] {
   try_cast_slice(a).unwrap()
 }
+
+/// As [try_cast_slice](try_cast_slice), but mut.
+pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], SliceCastError> {
+  if align_of::<B>() > align_of::<A>() && (a.as_ptr() as *mut A as usize) % align_of::<B>() != 0 {
+    Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+  } else {
+    if size_of::<B>() == size_of::<A>() {
+      Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, a.len()) })
+    } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
+      Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
+    } else {
+      if core::mem::size_of_val(a) % size_of::<B>() != 0 {
+        Err(SliceCastError::OutputSliceWouldHaveSlop)
+      } else {
+        let new_len = core::mem::size_of_val(a) / size_of::<B>();
+        Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, new_len) })
+      }
+    }
+  }
+}
+
+/// As [try_cast_slice_mut](try_cast_slice_mut), but unwraps the result for you.
+pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
+  try_cast_slice(a).unwrap()
+}
