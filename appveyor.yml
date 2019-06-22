@@ -14,7 +14,6 @@ matrix:
 
 environment:
   matrix:
-    - allow_failures: nightly
     - channel: stable
       target: x86_64-pc-windows-msvc
     - channel: stable
@@ -27,6 +26,10 @@ environment:
       target: x86_64-pc-windows-msvc
     - channel: nightly
       target: i686-pc-windows-msvc
+
+matrix:
+  allow_failures:
+    - channel: nightly
 
 install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
