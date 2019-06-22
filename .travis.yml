@@ -22,7 +22,11 @@ branches:
 
 matrix:
   fast_finish: true
+  allow_failures:
+  - rust: nightly
 
 script:
+  - rustup component add clippy
+  - cargo clippy --all --all-features --all-targets -- -D warnings
   - cargo -vv build
   - cargo -vv test

@@ -14,6 +14,7 @@ matrix:
 
 environment:
   matrix:
+    - allow_failures: nightly
     - channel: stable
       target: x86_64-pc-windows-msvc
     - channel: stable
@@ -38,5 +39,7 @@ install:
 build: false
 
 test_script:
+  - rustup component add clippy
+  - cargo clippy --all --all-features --all-targets -- -D warnings
   - cargo -vv build
   - cargo -vv test
