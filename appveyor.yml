@@ -14,19 +14,39 @@ matrix:
 
 environment:
   matrix:
-    - channel: stable
-      target: x86_64-pc-windows-msvc
-    - channel: stable
-      target: i686-pc-windows-msvc
-    - channel: beta
-      target: x86_64-pc-windows-msvc
-    - channel: beta
-      target: i686-pc-windows-msvc
-    - allow_failures:
-      - channel: nightly
-        target: x86_64-pc-windows-msvc
-      - channel: nightly
-        target: i686-pc-windows-msvc
+  # stable
+  - host: x86_64-pc-windows-msvc
+    targets: aarch64-pc-windows-msvc
+    channel: stable
+  - host: i686-pc-windows-msvc
+    channel: stable
+  - host: x86_64-pc-windows-gnu
+    channel: stable
+  - host: i686-pc-windows-gnu
+    channel: stable
+  # beta
+  - host: x86_64-pc-windows-msvc
+    targets: aarch64-pc-windows-msvc
+    channel: beta
+  - host: i686-pc-windows-msvc
+    channel: beta
+  - host: x86_64-pc-windows-gnu
+    channel: beta
+  - host: i686-pc-windows-gnu
+    channel: beta
+  # nightly
+  - host: x86_64-pc-windows-msvc
+    targets: aarch64-pc-windows-msvc
+    channel: nightly
+  - host: i686-pc-windows-msvc
+    channel: nightly
+  - host: x86_64-pc-windows-gnu
+    channel: nightly
+  - host: i686-pc-windows-gnu
+    channel: nightly
+matrix:
+  allow_failures:
+    - channel: nightly
 
 install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
