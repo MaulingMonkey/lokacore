@@ -22,14 +22,11 @@ environment:
       target: x86_64-pc-windows-msvc
     - channel: beta
       target: i686-pc-windows-msvc
-    - channel: nightly
-      target: x86_64-pc-windows-msvc
-    - channel: nightly
-      target: i686-pc-windows-msvc
-
-matrix:
-  allow_failures:
-    - channel: nightly
+    - allow_failures:
+      - channel: nightly
+        target: x86_64-pc-windows-msvc
+      - channel: nightly
+        target: i686-pc-windows-msvc
 
 install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
