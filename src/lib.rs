@@ -5,6 +5,7 @@
 
 use core::{
   mem::{align_of, size_of},
+  marker::PhantomData,
   num::*,
   ptr::NonNull,
 };
@@ -74,6 +75,7 @@ unsafe impl Zeroable for Option<NonZeroUsize> {}
 unsafe impl<T> Zeroable for *mut T {}
 unsafe impl<T> Zeroable for *const T {}
 unsafe impl<T> Zeroable for Option<NonNull<T>> {}
+unsafe impl<T> Zeroable for PhantomData<T> where T: Zeroable {}
 impl_unsafe_marker_for_array!(
   Zeroable, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
   24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024
@@ -124,6 +126,7 @@ unsafe impl Pod for Option<NonZeroUsize> {}
 unsafe impl<T> Pod for *mut T {}
 unsafe impl<T> Pod for *const T {}
 unsafe impl<T> Pod for Option<NonNull<T>> {}
+unsafe impl<T> Pod for PhantomData<T> where T: Pod {}
 impl_unsafe_marker_for_array!(
   Pod, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
   25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024
