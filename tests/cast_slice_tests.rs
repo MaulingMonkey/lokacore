@@ -52,10 +52,7 @@ fn test_try_cast_slice_mut() {
     u32_ptr as *const u32 as usize,
     the_bytes_ptr as *const u8 as usize
   );
-  assert_eq!(
-    u32_len * size_of::<u32>(),
-    the_bytes_len * size_of::<u8>()
-  );
+  assert_eq!(u32_len * size_of::<u32>(), the_bytes_len * size_of::<u8>());
 
   // by taking one byte off the front, we're definitely mis-aligned for u32.
   let mis_aligned_bytes = &mut the_bytes[1..];

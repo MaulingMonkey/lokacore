@@ -4,8 +4,8 @@
 //! Lokathor's crate of core-only odds and ends.
 
 use core::{
-  mem::{align_of, size_of},
   marker::PhantomData,
+  mem::{align_of, size_of},
   num::*,
   ptr::NonNull,
 };
@@ -94,6 +94,8 @@ impl_unsafe_marker_for_array!(
 ///   [Infallible](core::convert::Infallible)).
 /// * The type must allow any bit pattern (eg: no `bool` or `char`).
 /// * The type must not contain any padding bytes (eg: no `(u8, u16)`).
+/// * A struct needs to be `repr(C)`, or a `repr(transparent)` wrapper around a
+///   `Pod` type.
 pub unsafe trait Pod: Zeroable + Copy {}
 
 unsafe impl Pod for () {}
@@ -166,21 +168,19 @@ pub enum SliceCastError {
 ///   [ZST](https://doc.rust-lang.org/nomicon/exotic-sizes.html#zero-sized-types-zsts)
 ///   and a non-ZST.
 pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], SliceCastError> {
-  if align_of::<B>() > align_of::<A>() && (a.as_ptr() as *const A as usize) % align_of::<B>() != 0 {
+  // Note(Lokathor): everything with `align_of` and `size_of` will optimize away
+  // after monomorphization.
+  if align_of::<B>() > align_of::<A>() && (a.as_ptr() as usize) % align_of::<B>() != 0 {
     Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+  } else if size_of::<B>() == size_of::<A>() {
+    Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, a.len()) })
+  } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
+    Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
+  } else if core::mem::size_of_val(a) % size_of::<B>() != 0 {
+    Err(SliceCastError::OutputSliceWouldHaveSlop)
   } else {
-    if size_of::<B>() == size_of::<A>() {
-      Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, a.len()) })
-    } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
-      Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
-    } else {
-      if core::mem::size_of_val(a) % size_of::<B>() != 0 {
-        Err(SliceCastError::OutputSliceWouldHaveSlop)
-      } else {
-        let new_len = core::mem::size_of_val(a) / size_of::<B>();
-        Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, new_len) })
-      }
-    }
+    let new_len = core::mem::size_of_val(a) / size_of::<B>();
+    Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, new_len) })
   }
 }
 
@@ -191,21 +191,19 @@ pub fn cast_slice<A: Pod, B: Pod>(a: &[A]) -> &[B] {
 
 /// As [try_cast_slice](try_cast_slice), but mut.
 pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], SliceCastError> {
-  if align_of::<B>() > align_of::<A>() && (a.as_ptr() as *mut A as usize) % align_of::<B>() != 0 {
+  // Note(Lokathor): everything with `align_of` and `size_of` will optimize away
+  // after monomorphization.
+  if align_of::<B>() > align_of::<A>() && (a.as_ptr() as usize) % align_of::<B>() != 0 {
     Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+  } else if size_of::<B>() == size_of::<A>() {
+    Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, a.len()) })
+  } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
+    Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
+  } else if core::mem::size_of_val(a) % size_of::<B>() != 0 {
+    Err(SliceCastError::OutputSliceWouldHaveSlop)
   } else {
-    if size_of::<B>() == size_of::<A>() {
-      Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, a.len()) })
-    } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
-      Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
-    } else {
-      if core::mem::size_of_val(a) % size_of::<B>() != 0 {
-        Err(SliceCastError::OutputSliceWouldHaveSlop)
-      } else {
-        let new_len = core::mem::size_of_val(a) / size_of::<B>();
-        Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, new_len) })
-      }
-    }
+    let new_len = core::mem::size_of_val(a) / size_of::<B>();
+    Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, new_len) })
   }
 }
 
