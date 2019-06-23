@@ -27,6 +27,7 @@ install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - rustup-init -y --default-toolchain %channel% --default-host %target%
   - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+  - rustup component add clippy
   - rustc -vV
   - cargo -vV
 
@@ -34,7 +35,6 @@ install:
 build: false
 
 test_script:
-  - rustup component add clippy
   - cargo clippy --all --all-features --all-targets -- -D warnings
   - cargo -vv build
   - cargo -vv test
