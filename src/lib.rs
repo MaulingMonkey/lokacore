@@ -10,6 +10,26 @@ use core::{
   ptr::NonNull,
 };
 
+/// Fiddly to use, but totally gets you the minimum without branching.
+///
+/// Works for any integral type.
+#[macro_export]
+macro_rules! branchless_min {
+  ($x:expr, $y:expr, $u:ty) => {
+    $y ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
+  };
+}
+
+/// Fiddly to use, but totally gets you the maximum without branching.
+///
+/// Works for any integral type.
+#[macro_export]
+macro_rules! branchless_max {
+  ($x:expr, $y:expr, $u:ty) => {
+    $x ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
+  };
+}
+
 /// Implements an unsafe marker trait on an array type if the element type
 /// also supports that marker trait.
 ///
