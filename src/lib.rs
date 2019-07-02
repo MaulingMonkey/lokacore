@@ -30,7 +30,7 @@ macro_rules! branchless_max {
   };
 }
 
-/// Calls the `rdtsc` intrinsic.
+/// [`x86`/`x86_64`]: Calls the `rdtsc` intrinsic.
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[inline]
 pub fn rdtsc() -> u64 {
