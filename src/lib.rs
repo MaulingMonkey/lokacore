@@ -15,7 +15,7 @@ use core::{
 /// Works for any integral type.
 #[macro_export]
 macro_rules! branchless_min {
-  ($x:expr, $y:expr, $u:ty) => {
+  ($x:ident, $y:ident, $u:ty) => {
     $y ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
   };
 }
@@ -25,7 +25,7 @@ macro_rules! branchless_min {
 /// Works for any integral type.
 #[macro_export]
 macro_rules! branchless_max {
-  ($x:expr, $y:expr, $u:ty) => {
+  ($x:ident, $y:ident, $u:ty) => {
     $x ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
   };
 }
