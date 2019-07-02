@@ -30,6 +30,20 @@ macro_rules! branchless_max {
   };
 }
 
+/// Calls the `rdtsc` intrinsic.
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[inline]
+pub fn rdtsc() -> u64 {
+  #[cfg(target_arch = "x86")]
+  unsafe {
+    core::arch::x86::_rdtsc()
+  }
+  #[cfg(target_arch = "x86_64")]
+  unsafe {
+    core::arch::x86_64::_rdtsc()
+  }
+}
+
 /// Implements an unsafe marker trait on an array type if the element type
 /// also supports that marker trait.
 ///
