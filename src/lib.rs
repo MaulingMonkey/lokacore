@@ -36,11 +36,11 @@ macro_rules! branchless_max {
 pub fn rdtsc() -> u64 {
   #[cfg(target_arch = "x86")]
   unsafe {
-    core::arch::x86::_rdtsc()
+    core::arch::x86::_rdtsc() as u64
   }
   #[cfg(target_arch = "x86_64")]
   unsafe {
-    core::arch::x86_64::_rdtsc()
+    core::arch::x86_64::_rdtsc() as u64
   }
 }
 
