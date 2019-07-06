@@ -10,6 +10,8 @@ use core::{
   ptr::NonNull,
 };
 
+pub mod arch;
+
 /// Fiddly to use, but totally gets you the minimum without branching.
 ///
 /// Works for any integral type.
@@ -28,20 +30,6 @@ macro_rules! branchless_max {
   ($x:ident, $y:ident, $u:ty) => {
     $x ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
   };
-}
-
-/// [`x86`/`x86_64`]: Calls the `rdtsc` intrinsic.
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[inline]
-pub fn rdtsc() -> u64 {
-  #[cfg(target_arch = "x86")]
-  unsafe {
-    core::arch::x86::_rdtsc() as u64
-  }
-  #[cfg(target_arch = "x86_64")]
-  unsafe {
-    core::arch::x86_64::_rdtsc() as u64
-  }
 }
 
 /// Implements an unsafe marker trait on an array type if the element type
@@ -252,4 +240,12 @@ pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
 /// empty slice might not match the pointer value of the input reference.
 pub fn bytes_of<T: Pod>(t: &T) -> &[u8] {
   try_cast_slice::<T, u8>(core::slice::from_ref(t)).unwrap_or(&[])
+}
+
+/// Re-interprets a mut reference as a mut byte slice reference.
+///
+/// Any ZST becomes an empty slice, and in that case the pointer value of that
+/// empty slice might not match the pointer value of the input reference.
+pub fn bytes_of_mut<T: Pod>(t: &mut T) -> &mut [u8] {
+  try_cast_slice_mut::<T, u8>(core::slice::from_mut(t)).unwrap_or(&mut [])
 }
