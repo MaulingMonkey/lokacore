@@ -46,6 +46,21 @@ macro_rules! impl_unsafe_marker_for_array {
   }
 }
 
+#[repr(align(2))]
+pub struct Align2<T>(pub T);
+
+#[repr(align(4))]
+pub struct Align4<T>(pub T);
+
+#[repr(align(8))]
+pub struct Align8<T>(pub T);
+
+#[repr(align(16))]
+pub struct Align16<T>(pub T);
+
+#[repr(align(32))]
+pub struct Align32<T>(pub T);
+
 /// A trait for types that can be safely made with [zeroed](core::mem::zeroed).
 ///
 /// ## Safety
