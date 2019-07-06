@@ -4,7 +4,7 @@ git:
   quiet: true
 
 rust:
-  - stable
+  - 1.36.0
   - beta
   - nightly
 
@@ -27,6 +27,6 @@ matrix:
 
 script:
   - rustup component add clippy
-  - cargo clippy --all --all-features --all-targets -- -D warnings
-  - cargo -vv build
-  - cargo -vv test
+  - cargo clippy
+  - cargo build
+  - cargo test

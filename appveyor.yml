@@ -14,12 +14,12 @@ matrix:
 
 environment:
   matrix:
-    - channel: stable
+    - channel: 1.36.0
       target: x86_64-pc-windows-msvc
+    - channel: 1.36.0
+      target: x86_64-pc-windows-gnu
     - channel: beta
       target: x86_64-pc-windows-msvc
-    - channel: stable
-      target: x86_64-pc-windows-gnu
     - channel: beta
       target: x86_64-pc-windows-gnu
 
@@ -35,6 +35,6 @@ install:
 build: false
 
 test_script:
-  - cargo clippy --all --all-features --all-targets -- -D warnings
-  - cargo -vv build
-  - cargo -vv test
+  - cargo clippy
+  - cargo build
+  - cargo test

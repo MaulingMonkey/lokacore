@@ -10,12 +10,14 @@ use core::{
   ptr::NonNull,
 };
 
+pub mod arch;
+
 /// Fiddly to use, but totally gets you the minimum without branching.
 ///
 /// Works for any integral type.
 #[macro_export]
 macro_rules! branchless_min {
-  ($x:expr, $y:expr, $u:ty) => {
+  ($x:ident, $y:ident, $u:ty) => {
     $y ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
   };
 }
@@ -25,7 +27,7 @@ macro_rules! branchless_min {
 /// Works for any integral type.
 #[macro_export]
 macro_rules! branchless_max {
-  ($x:expr, $y:expr, $u:ty) => {
+  ($x:ident, $y:ident, $u:ty) => {
     $x ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
   };
 }
@@ -238,4 +240,12 @@ pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
 /// empty slice might not match the pointer value of the input reference.
 pub fn bytes_of<T: Pod>(t: &T) -> &[u8] {
   try_cast_slice::<T, u8>(core::slice::from_ref(t)).unwrap_or(&[])
+}
+
+/// Re-interprets a mut reference as a mut byte slice reference.
+///
+/// Any ZST becomes an empty slice, and in that case the pointer value of that
+/// empty slice might not match the pointer value of the input reference.
+pub fn bytes_of_mut<T: Pod>(t: &mut T) -> &mut [u8] {
+  try_cast_slice_mut::<T, u8>(core::slice::from_mut(t)).unwrap_or(&mut [])
 }
