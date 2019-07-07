@@ -46,18 +46,28 @@ macro_rules! impl_unsafe_marker_for_array {
   }
 }
 
+/// Wrapper to make the inner value be aligned to a minimum of 2.
+#[derive(Debug, Clone, Copy)]
 #[repr(align(2))]
 pub struct Align2<T>(pub T);
 
+/// Wrapper to make the inner value be aligned to a minimum of 4.
+#[derive(Debug, Clone, Copy)]
 #[repr(align(4))]
 pub struct Align4<T>(pub T);
 
+/// Wrapper to make the inner value be aligned to a minimum of 8.
+#[derive(Debug, Clone, Copy)]
 #[repr(align(8))]
 pub struct Align8<T>(pub T);
 
+/// Wrapper to make the inner value be aligned to a minimum of 16.
+#[derive(Debug, Clone, Copy)]
 #[repr(align(16))]
 pub struct Align16<T>(pub T);
 
+/// Wrapper to make the inner value be aligned to a minimum of 32.
+#[derive(Debug, Clone, Copy)]
 #[repr(align(32))]
 pub struct Align32<T>(pub T);
 
