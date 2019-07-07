@@ -1,4 +1,3 @@
-
 use lokacore::*;
 
 #[test]
