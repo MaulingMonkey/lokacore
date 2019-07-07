@@ -1,5 +1,7 @@
 //! Intrinsics for the [x86_64](https://en.wikipedia.org/wiki/X86-64) processor family.
 
+use super::*;
+
 use core::arch::x86_64::*;
 
 #[cfg(target_feature = "sse")]
