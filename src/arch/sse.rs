@@ -1,241 +1,5 @@
 use super::*;
 
-const ALL_EXCEPTIONS: u32 = _MM_EXCEPT_INVALID
-  | _MM_EXCEPT_DENORM
-  | _MM_EXCEPT_DIV_ZERO
-  | _MM_EXCEPT_OVERFLOW
-  | _MM_EXCEPT_UNDERFLOW
-  | _MM_EXCEPT_INEXACT;
-
-/// Shuffles `a` and `b` into an output according to the indexes given.
-///
-/// * The two low lanes come from `a`
-/// * The two high lanes come from `b`
-/// * Remember that you can pass the same register as both positions if desired.
-///
-/// The index input literals are ordered so that it lines up the same as when
-/// using the [set](crate::arch::x86_64::m128::set) method: highest index to
-/// lowest index.
-///
-/// ```rust
-/// #[cfg(target_arch = "x86")]
-/// use lokacore::{shuffle, arch::x86::m128};
-/// #[cfg(target_arch = "x86_64")]
-/// use lokacore::{shuffle, arch::x86_64::m128};
-/// 
-/// // Indexes are ordered high to low: 3 2 1 0
-/// 
-/// let a = m128::set(9.0, 8.0, 7.0, 6.0);
-/// let output = shuffle!(a, a, 0, 1, 3, 2);
-/// let expected = m128::set(6.0, 7.0, 9.0, 8.0);
-/// assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
-///
-/// let b = m128::set(12.0, 13.0, 14.0, 15.0);
-/// let output = shuffle!(a, b, 0, 1, 3, 2);
-/// let expected = m128::set(15.0, 14.0, 9.0, 8.0);
-/// assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
-/// ```
-#[macro_export]
-macro_rules! shuffle {
-  ($a:ident, $b:ident, $i0:literal, $i1:literal, $i2:literal, $i3:literal) => {{
-    const I0: i32 = (($i0 as u8) & 0b11) as i32;
-    const I1: i32 = (($i1 as u8) & 0b11) as i32;
-    const I2: i32 = (($i2 as u8) & 0b11) as i32;
-    const I3: i32 = (($i3 as u8) & 0b11) as i32;
-    const IMM8: i32 = (I0 << 6 | I1 << 4 | I2 << 2 | I3) as i32;
-    #[cfg(all(target_arch = "x86", target_feature = "sse"))]
-    {
-      m128(unsafe { core::arch::x86::_mm_shuffle_ps($a.0, $b.0, IMM8) })
-    }
-    #[cfg(all(target_arch = "x86_64", target_feature = "sse"))]
-    {
-      m128(unsafe { core::arch::x86_64::_mm_shuffle_ps($a.0, $b.0, IMM8) })
-    }
-    #[cfg(not(target_feature = "sse"))]
-    {
-      compile_error!("the shuffle macro requires 'sse' to be enabled.");
-    }
-  }};
-}
-
-#[test]
-fn test_shuffle() {
-  let a = m128::set(9.0, 8.0, 7.0, 6.0);
-
-  let output = shuffle!(a, a, 0, 0, 0, 0);
-  let expected = m128::set_all(6.0);
-  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
-
-  let output = shuffle!(a, a, 0, 0, 0, 1);
-  let expected = m128::set(6.0, 6.0, 6.0, 7.0);
-  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
-}
-
-/// Reads the `MXCSR` control and status register.
-#[allow(bad_style)]
-#[inline(always)]
-pub fn get_MXCSR() -> u32 {
-  unsafe { _mm_getcsr() }
-}
-
-/// Sets the `MXCSR` control and status register.
-///
-/// Modifications to this register only affect the current thread.
-///
-/// TODO: make this safe wrapped.
-#[allow(bad_style)]
-#[inline(always)]
-pub unsafe fn set_MXCSR(val: u32) {
-  _mm_setcsr(val)
-}
-
-/// Which exceptions are masked (ignored).
-#[inline(always)]
-pub fn get_exception_mask() -> u32 {
-  unsafe { _MM_GET_EXCEPTION_MASK() }
-}
-
-/// Sets the [exception
-/// mask](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags)
-///
-/// **WARNING:** an unmasked exception calls the exception handler, and the
-/// standard exception handler in Rust will simply terminate _the entire
-/// process_.
-#[inline(always)]
-pub unsafe fn set_exception_mask(mask: u32) {
-  if mask & !ALL_EXCEPTIONS > 0 {
-    panic!("Illegal exception mask input: {}", mask)
-  } else {
-    _MM_SET_EXCEPTION_MASK(mask)
-  }
-}
-
-/// Gets the current exception status.
-#[inline(always)]
-pub fn get_exception_state() -> u32 {
-  unsafe { _MM_GET_EXCEPTION_STATE() }
-}
-
-/// Sets the current [exception
-/// state](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags)
-#[inline(always)]
-pub fn set_exception_state(state: u32) {
-  if state & !ALL_EXCEPTIONS > 0 {
-    panic!("Illegal exception state input: {}", state)
-  } else {
-    unsafe { _MM_SET_EXCEPTION_STATE(state) }
-  }
-}
-
-/// If values that would be denormalized are set to zero instead.
-#[inline(always)]
-pub fn get_flush_zero_mode() -> u32 {
-  unsafe { _MM_GET_FLUSH_ZERO_MODE() }
-}
-
-/// Sets the [flush to zero
-/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#denormals-are-zeroflush-to-zero-mode)
-#[inline(always)]
-pub fn set_flush_zero_mode(mode: u32) {
-  match mode {
-    _MM_FLUSH_ZERO_OFF | _MM_FLUSH_ZERO_ON => unsafe { _MM_SET_FLUSH_ZERO_MODE(mode) },
-    _ => panic!("Illegal flush zero mode constant: {}", mode),
-  }
-}
-
-/// The current rounding mode.
-#[inline(always)]
-pub fn get_rounding_mode() -> u32 {
-  unsafe { _MM_GET_ROUNDING_MODE() }
-}
-
-/// Sets the [rounding
-/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
-/// of the current thread.
-#[inline(always)]
-pub fn set_rounding_mode(mode: u32) {
-  match mode {
-    _MM_ROUND_NEAREST | _MM_ROUND_DOWN | _MM_ROUND_UP | _MM_ROUND_TOWARD_ZERO => unsafe {
-      _MM_SET_ROUNDING_MODE(mode)
-    },
-    _ => panic!("Illegal round mode constant: {}", mode),
-  }
-}
-
-/// As
-/// [_mm_sfence](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html),
-/// just marked safe. This forces all store-to-memory operations before this to
-/// be globally visible before any such operations after.
-#[inline(always)]
-pub fn store_fence() {
-  unsafe { _mm_sfence() }
-}
-
-/// Hints to the CPU that the cache line that this pointer is part of should be
-/// fetched into all levels of the cache hierarchy.
-///
-/// It's only a hint, the actual implementation depends on the particular CPU.
-/// An invalid pointer will not cause UB but it can dramatically _reduce_
-/// performance, so be mindful.
-#[allow(bad_style)]
-#[inline(always)]
-pub fn prefetch_T0(p: *const impl Sized) {
-  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T0) }
-}
-
-/// Hints to the CPU that the cache line that this pointer is part of should be
-/// fetched into L2 cache and higher.
-///
-/// It's only a hint, the actual implementation depends on the particular CPU.
-/// An invalid pointer will not cause UB but it can dramatically _reduce_
-/// performance, so be mindful.
-#[allow(bad_style)]
-#[inline(always)]
-pub fn prefetch_T1(p: *const impl Sized) {
-  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T1) }
-}
-
-/// Hints to the CPU that the cache line that this pointer is part of should be
-/// fetched into L3 cache and higher (or L2 if there's no L3).
-///
-/// It's only a hint, the actual implementation depends on the particular CPU.
-/// An invalid pointer will not cause UB but it can dramatically _reduce_
-/// performance, so be mindful.
-#[allow(bad_style)]
-#[inline(always)]
-pub fn prefetch_T2(p: *const impl Sized) {
-  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T2) }
-}
-
-/// Hints to the CPU that the cache line that this pointer is part of should be
-/// fetched using non-temporal access. This can bring it closer without
-/// polluting the cache.
-///
-/// It's only a hint, the actual implementation depends on the particular CPU.
-/// An invalid pointer will not cause UB but it can dramatically _reduce_
-/// performance, so be mindful.
-#[inline(always)]
-pub fn prefetch_nontemporal(p: *const impl Sized) {
-  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_NTA) }
-}
-
-/// Treats the inputs as rows of a 4x4 matrix and transposes the matrix.
-///
-/// ```txt
-/// tmp0 := _mm_unpacklo_ps(row0, row1);
-/// tmp2 := _mm_unpacklo_ps(row2, row3);
-/// tmp1 := _mm_unpackhi_ps(row0, row1);
-/// tmp3 := _mm_unpackhi_ps(row2, row3);
-/// row0 := _mm_movelh_ps(tmp0, tmp2);
-/// row1 := _mm_movehl_ps(tmp2, tmp0);
-/// row2 := _mm_movelh_ps(tmp1, tmp3);
-/// row3 := _mm_movehl_ps(tmp3, tmp1);
-/// ```
-#[inline(always)]
-pub fn transpose4(row0: &mut m128, row1: &mut m128, row2: &mut m128, row3: &mut m128) {
-  unsafe { _MM_TRANSPOSE4_PS(&mut row0.0, &mut row1.0, &mut row2.0, &mut row3.0) }
-}
-
 /// # SSE Operations
 impl m128 {
   /// Sets the floats into a register, high to low. The first argument is the
@@ -360,22 +124,12 @@ impl m128 {
     unsafe { _mm_stream_ps(p, self.0) };
   }
 
-  /// f32x4 lanewise addition
+  /// As [store](m128::store), but makes a new array and returns it for you.
   #[inline(always)]
-  pub fn add(self, other: m128) -> m128 {
-    m128(unsafe { _mm_add_ps(self.0, other.0) })
-  }
-
-  /// f32x4 lanewise division.
-  #[inline(always)]
-  pub fn div(self, other: m128) -> m128 {
-    m128(unsafe { _mm_div_ps(self.0, other.0) })
-  }
-
-  /// f32x4 lanewise multiplication.
-  #[inline(always)]
-  pub fn mul(self, other: m128) -> m128 {
-    m128(unsafe { _mm_mul_ps(self.0, other.0) })
+  pub fn to_array(self) -> [f32; 4] {
+    let mut a = Align16([0.0f32; 4]);
+    self.store(&mut a);
+    a.0
   }
 
   /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
@@ -398,12 +152,6 @@ impl m128 {
   #[inline(always)]
   pub fn sqrt(self) -> m128 {
     m128(unsafe { _mm_sqrt_ps(self.0) })
-  }
-
-  /// f32x4 lanewise subtraction, `self - other`.
-  #[inline(always)]
-  pub fn sub(self, other: m128) -> m128 {
-    m128(unsafe { _mm_sub_ps(self.0, other.0) })
   }
 
   /// low lane is `self+other`, other lanes are just `self`.
@@ -449,30 +197,12 @@ impl m128 {
     m128(unsafe { _mm_sub_ss(self.0, other.0) })
   }
 
-  /// bitwise `self & other`.
-  #[inline(always)]
-  pub fn and(self, other: m128) -> m128 {
-    m128(unsafe { _mm_and_ps(self.0, other.0) })
-  }
-
   /// bitwise `!self & other`.
   #[inline(always)]
   pub fn andnot(self, other: m128) -> m128 {
     m128(unsafe { _mm_andnot_ps(self.0, other.0) })
   }
 
-  /// bitwise `self | other`.
-  #[inline(always)]
-  pub fn or(self, other: m128) -> m128 {
-    m128(unsafe { _mm_or_ps(self.0, other.0) })
-  }
-
-  /// bitwise `self XOR other`.
-  #[inline(always)]
-  pub fn xor(self, other: m128) -> m128 {
-    m128(unsafe { _mm_xor_ps(self.0, other.0) })
-  }
-  
   /// lanewise `self == other`, 0 for `false`, all bits for `true`.
   #[inline(always)]
   pub fn cmp_eq(self, other: m128) -> m128 {
@@ -618,7 +348,7 @@ impl m128 {
   pub fn cmp_nan_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpunord_ss(self.0, other.0) })
   }
-  
+
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
   pub fn comi_eq_single(self, other: m128) -> i32 {
@@ -654,7 +384,7 @@ impl m128 {
   pub fn comi_neq_single(self, other: m128) -> i32 {
     unsafe { _mm_comineq_ss(self.0, other.0) }
   }
-  
+
   /// Converts the `i32` into the lowest lane, other lanes copy `self`.
   #[inline(always)]
   pub fn cvt_i32f32_single(self, b: i32) -> m128 {
@@ -842,4 +572,368 @@ impl m128 {
   pub fn unpack_low(self, other: m128) -> m128 {
     m128(unsafe { _mm_unpacklo_ps(self.0, other.0) })
   }
+}
+
+impl core::ops::Add for m128 {
+  type Output = Self;
+  /// f32x4 lanewise addition
+  #[inline(always)]
+  fn add(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_add_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::Div for m128 {
+  type Output = Self;
+  /// f32x4 lanewise division
+  #[inline(always)]
+  fn div(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_div_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::Mul for m128 {
+  type Output = Self;
+  /// f32x4 lanewise multiplication
+  #[inline(always)]
+  fn mul(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_mul_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::Sub for m128 {
+  type Output = Self;
+  /// f32x4 lanewise subtraction
+  #[inline(always)]
+  fn sub(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_sub_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::AddAssign for m128 {
+  /// f32x4 lanewise addition then assignment
+  #[inline(always)]
+  fn add_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_add_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::DivAssign for m128 {
+  /// f32x4 lanewise division then assignment
+  #[inline(always)]
+  fn div_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_div_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::MulAssign for m128 {
+  /// f32x4 lanewise multiplication then assignment
+  #[inline(always)]
+  fn mul_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_mul_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::SubAssign for m128 {
+  /// f32x4 lanewise subtraction then assignment
+  #[inline(always)]
+  fn sub_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_sub_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::BitAnd for m128 {
+  type Output = Self;
+  /// bitwise `&`
+  #[inline(always)]
+  fn bitand(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_and_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::BitOr for m128 {
+  type Output = Self;
+  /// bitwise `|`
+  #[inline(always)]
+  fn bitor(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_or_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::BitXor for m128 {
+  type Output = Self;
+  /// bitwise `XOR`
+  #[inline(always)]
+  fn bitxor(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_xor_ps(self.0, rhs.0) })
+  }
+}
+
+impl core::ops::BitAndAssign for m128 {
+  /// bitwise `&` then assignment
+  #[inline(always)]
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_and_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::BitOrAssign for m128 {
+  /// bitwise `|` then assignment
+  #[inline(always)]
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_or_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::BitXorAssign for m128 {
+  /// bitwise `XOR` then assignment
+  #[inline(always)]
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_xor_ps(self.0, rhs.0) };
+  }
+}
+
+impl core::ops::Neg for m128 {
+  type Output = Self;
+  /// lanewise unary negation
+  #[inline(always)]
+  fn neg(self) -> Self {
+    m128(unsafe { _mm_sub_ps(_mm_setzero_ps(), self.0) })
+  }
+}
+
+/// Shuffles `a` and `b` into an output according to the indexes given.
+///
+/// * The two low lanes come from `a`
+/// * The two high lanes come from `b`
+/// * Remember that you can pass the same register as both positions if desired.
+///
+/// The index input literals are ordered so that it lines up the same as when
+/// using the [set](crate::arch::x86_64::m128::set) method: highest index to
+/// lowest index.
+///
+/// ```rust
+/// #[cfg(target_arch = "x86")]
+/// use lokacore::{shuffle, arch::x86::m128};
+/// #[cfg(target_arch = "x86_64")]
+/// use lokacore::{shuffle, arch::x86_64::m128};
+///
+/// // Indexes are ordered high to low: 3 2 1 0
+///
+/// let a = m128::set(9.0, 8.0, 7.0, 6.0);
+/// let output = shuffle!(a, a, 0, 1, 3, 2);
+/// let expected = m128::set(6.0, 7.0, 9.0, 8.0);
+/// assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+///
+/// let b = m128::set(12.0, 13.0, 14.0, 15.0);
+/// let output = shuffle!(a, b, 0, 1, 3, 2);
+/// let expected = m128::set(15.0, 14.0, 9.0, 8.0);
+/// assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+/// ```
+#[macro_export]
+macro_rules! shuffle {
+  ($a:ident, $b:ident, $i0:literal, $i1:literal, $i2:literal, $i3:literal) => {{
+    const I0: i32 = (($i0 as u8) & 0b11) as i32;
+    const I1: i32 = (($i1 as u8) & 0b11) as i32;
+    const I2: i32 = (($i2 as u8) & 0b11) as i32;
+    const I3: i32 = (($i3 as u8) & 0b11) as i32;
+    const IMM8: i32 = (I0 << 6 | I1 << 4 | I2 << 2 | I3) as i32;
+    #[cfg(all(target_arch = "x86", target_feature = "sse"))]
+    {
+      m128(unsafe { core::arch::x86::_mm_shuffle_ps($a.0, $b.0, IMM8) })
+    }
+    #[cfg(all(target_arch = "x86_64", target_feature = "sse"))]
+    {
+      m128(unsafe { core::arch::x86_64::_mm_shuffle_ps($a.0, $b.0, IMM8) })
+    }
+    #[cfg(not(target_feature = "sse"))]
+    {
+      compile_error!("the shuffle macro requires 'sse' to be enabled.");
+    }
+  }};
+}
+
+/// Treats the inputs as rows of a 4x4 matrix and transposes the matrix.
+///
+/// ```txt
+/// tmp0 := _mm_unpacklo_ps(row0, row1);
+/// tmp2 := _mm_unpacklo_ps(row2, row3);
+/// tmp1 := _mm_unpackhi_ps(row0, row1);
+/// tmp3 := _mm_unpackhi_ps(row2, row3);
+/// row0 := _mm_movelh_ps(tmp0, tmp2);
+/// row1 := _mm_movehl_ps(tmp2, tmp0);
+/// row2 := _mm_movelh_ps(tmp1, tmp3);
+/// row3 := _mm_movehl_ps(tmp3, tmp1);
+/// ```
+#[inline(always)]
+pub fn transpose4(row0: &mut m128, row1: &mut m128, row2: &mut m128, row3: &mut m128) {
+  unsafe { _MM_TRANSPOSE4_PS(&mut row0.0, &mut row1.0, &mut row2.0, &mut row3.0) }
+}
+
+const ALL_EXCEPTIONS: u32 = _MM_EXCEPT_INVALID
+  | _MM_EXCEPT_DENORM
+  | _MM_EXCEPT_DIV_ZERO
+  | _MM_EXCEPT_OVERFLOW
+  | _MM_EXCEPT_UNDERFLOW
+  | _MM_EXCEPT_INEXACT;
+
+#[test]
+fn test_shuffle() {
+  let a = m128::set(9.0, 8.0, 7.0, 6.0);
+
+  let output = shuffle!(a, a, 0, 0, 0, 0);
+  let expected = m128::set_all(6.0);
+  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+
+  let output = shuffle!(a, a, 0, 0, 0, 1);
+  let expected = m128::set(6.0, 6.0, 6.0, 7.0);
+  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+}
+
+/// Reads the `MXCSR` control and status register.
+#[allow(bad_style)]
+#[inline(always)]
+pub fn get_MXCSR() -> u32 {
+  unsafe { _mm_getcsr() }
+}
+
+/// Sets the `MXCSR` control and status register.
+///
+/// Modifications to this register only affect the current thread.
+///
+/// TODO: make this safe wrapped.
+#[allow(bad_style)]
+#[inline(always)]
+pub unsafe fn set_MXCSR(val: u32) {
+  _mm_setcsr(val)
+}
+
+/// Which exceptions are masked (ignored).
+#[inline(always)]
+pub fn get_exception_mask() -> u32 {
+  unsafe { _MM_GET_EXCEPTION_MASK() }
+}
+
+/// Sets the [exception
+/// mask](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags)
+///
+/// **WARNING:** an unmasked exception calls the exception handler, and the
+/// standard exception handler in Rust will simply terminate _the entire
+/// process_.
+#[inline(always)]
+pub unsafe fn set_exception_mask(mask: u32) {
+  if mask & !ALL_EXCEPTIONS > 0 {
+    panic!("Illegal exception mask input: {}", mask)
+  } else {
+    _MM_SET_EXCEPTION_MASK(mask)
+  }
+}
+
+/// Gets the current exception status.
+#[inline(always)]
+pub fn get_exception_state() -> u32 {
+  unsafe { _MM_GET_EXCEPTION_STATE() }
+}
+
+/// Sets the current [exception
+/// state](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags)
+#[inline(always)]
+pub fn set_exception_state(state: u32) {
+  if state & !ALL_EXCEPTIONS > 0 {
+    panic!("Illegal exception state input: {}", state)
+  } else {
+    unsafe { _MM_SET_EXCEPTION_STATE(state) }
+  }
+}
+
+/// If values that would be denormalized are set to zero instead.
+#[inline(always)]
+pub fn get_flush_zero_mode() -> u32 {
+  unsafe { _MM_GET_FLUSH_ZERO_MODE() }
+}
+
+/// Sets the [flush to zero
+/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#denormals-are-zeroflush-to-zero-mode)
+#[inline(always)]
+pub fn set_flush_zero_mode(mode: u32) {
+  match mode {
+    _MM_FLUSH_ZERO_OFF | _MM_FLUSH_ZERO_ON => unsafe { _MM_SET_FLUSH_ZERO_MODE(mode) },
+    _ => panic!("Illegal flush zero mode constant: {}", mode),
+  }
+}
+
+/// The current rounding mode.
+#[inline(always)]
+pub fn get_rounding_mode() -> u32 {
+  unsafe { _MM_GET_ROUNDING_MODE() }
+}
+
+/// Sets the [rounding
+/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
+/// of the current thread.
+#[inline(always)]
+pub fn set_rounding_mode(mode: u32) {
+  match mode {
+    _MM_ROUND_NEAREST | _MM_ROUND_DOWN | _MM_ROUND_UP | _MM_ROUND_TOWARD_ZERO => unsafe {
+      _MM_SET_ROUNDING_MODE(mode)
+    },
+    _ => panic!("Illegal round mode constant: {}", mode),
+  }
+}
+
+/// As
+/// [_mm_sfence](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html),
+/// just marked safe. This forces all store-to-memory operations before this to
+/// be globally visible before any such operations after.
+#[inline(always)]
+pub fn store_fence() {
+  unsafe { _mm_sfence() }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched into all levels of the cache hierarchy.
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[allow(bad_style)]
+#[inline(always)]
+pub fn prefetch_T0(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T0) }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched into L2 cache and higher.
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[allow(bad_style)]
+#[inline(always)]
+pub fn prefetch_T1(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T1) }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched into L3 cache and higher (or L2 if there's no L3).
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[allow(bad_style)]
+#[inline(always)]
+pub fn prefetch_T2(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T2) }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched using non-temporal access. This can bring it closer without
+/// polluting the cache.
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[inline(always)]
+pub fn prefetch_nontemporal(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_NTA) }
 }
