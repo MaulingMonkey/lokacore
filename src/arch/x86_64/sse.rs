@@ -1,9 +1,141 @@
 use super::*;
 
+/// Shuffles `a` and `b` into an output according to the indexes given.
+///
+/// * The two low lanes come from `a`
+/// * The two high lanes come from `b`
+/// * Remember that you can pass the same register as both positions if desired.
+///
+/// The index input literals are ordered so that it lines up the same as when
+/// using the [set](crate::arch::x86_64::m128::set) method: highest index to
+/// lowest index.
+///
+/// ```rust
+/// // Indexes are ordered high to low: 3 2 1 0
+/// 
+/// use lokacore::{shuffle, arch::x86_64::m128};
+/// let a = m128::set(9.0, 8.0, 7.0, 6.0);
+/// let output = shuffle!(a, a, 0, 1, 3, 2);
+/// let expected = m128::set(6.0, 7.0, 9.0, 8.0);
+/// assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+///
+/// let b = m128::set(12.0, 13.0, 14.0, 15.0);
+/// let output = shuffle!(a, b, 0, 1, 3, 2);
+/// let expected = m128::set(15.0, 14.0, 9.0, 8.0);
+/// assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+/// ```
+#[macro_export]
+macro_rules! shuffle {
+  ($a:ident, $b:ident, $i0:literal, $i1:literal, $i2:literal, $i3:literal) => {{
+    const I0: i32 = (($i0 as u8) & 0b11) as i32;
+    const I1: i32 = (($i1 as u8) & 0b11) as i32;
+    const I2: i32 = (($i2 as u8) & 0b11) as i32;
+    const I3: i32 = (($i3 as u8) & 0b11) as i32;
+    const IMM8: i32 = (I0 << 6 | I1 << 4 | I2 << 2 | I3) as i32;
+    #[cfg(all(target_arch = "x86", target_feature="sse"))]
+    {
+      m128(unsafe { core::arch::x86::_mm_shuffle_ps($a.0, $b.0, IMM8) })
+    }
+    #[cfg(all(target_arch = "x86_64", target_feature="sse"))]
+    {
+      m128(unsafe { core::arch::x86_64::_mm_shuffle_ps($a.0, $b.0, IMM8) })
+    }
+    #[cfg(not(target_feature="sse"))]
+    {
+      compile_error!("the shuffle macro requires 'sse' to be enabled.");
+    }
+  }};
+}
+
+#[test]
+fn test_shuffle() {
+  let a = m128::set(9.0, 8.0, 7.0, 6.0);
+
+  let output = shuffle!(a, a, 0, 0, 0, 0);
+  let expected = m128::set_all(6.0);
+  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+
+  let output = shuffle!(a, a, 0, 0, 0, 1);
+  let expected = m128::set(6.0, 6.0, 6.0, 7.0);
+  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
+}
+
 /// Reads the `MXCSR` control and status register.
 #[allow(bad_style)]
 pub fn get_MXCSR() -> u32 {
   unsafe { _mm_getcsr() }
+}
+
+/// Which exceptions are masked (ignored).
+pub fn get_exception_mask() -> u32 {
+  unsafe { _MM_GET_EXCEPTION_MASK() }
+}
+
+/// Gets the current exception status.
+pub fn get_exception_state() -> u32 {
+  unsafe { _MM_GET_EXCEPTION_STATE() }
+}
+
+/// If values that would be denormalized are set to zero instead. 
+pub fn get_flush_zero_mode() -> u32 {
+  unsafe { _MM_GET_FLUSH_ZERO_MODE() }
+}
+
+/// The current rounding mode.
+pub fn get_rounding_mode() -> u32 {
+  unsafe { _MM_GET_ROUNDING_MODE() }
+}
+
+/// As
+/// [_mm_sfence](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html),
+/// just marked safe. This forces all store-to-memory operations before this to
+/// be globally visible before any such operations after.
+pub fn store_fence() {
+  unsafe { _mm_sfence() }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched into all levels of the cache hierarchy.
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[allow(bad_style)]
+pub fn prefetch_T0(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T0) }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched into L2 cache and higher.
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[allow(bad_style)]
+pub fn prefetch_T1(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T1) }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched into L3 cache and higher (or L2 if there's no L3).
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+#[allow(bad_style)]
+pub fn prefetch_T2(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T2) }
+}
+
+/// Hints to the CPU that the cache line that this pointer is part of should be
+/// fetched using non-temporal access. This can bring it closer without
+/// polluting the cache.
+///
+/// It's only a hint, the actual implementation depends on the particular CPU.
+/// An invalid pointer will not cause UB but it can dramatically _reduce_
+/// performance, so be mindful.
+pub fn prefetch_nontemporal(p: *const impl Sized) {
+  unsafe { _mm_prefetch(p as *const i8, _MM_HINT_NTA) }
 }
 
 // TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_prefetch.html
