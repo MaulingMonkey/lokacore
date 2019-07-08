@@ -1,5 +1,17 @@
 use super::*;
 
+/// Reads the `MXCSR` control and status register.
+#[allow(bad_style)]
+pub fn get_MXCSR() -> u32 {
+  unsafe { _mm_getcsr() }
+}
+
+// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_prefetch.html
+
+// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html
+
+// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_shuffle_ps.html
+
 /// # Constructors
 impl m128 {
   /// Sets the floats into a register, high to low. The first argument is the
@@ -17,7 +29,7 @@ impl m128 {
   }
 
   /// Sets the given value as all lanes in the register.
-  pub fn set1(f: f32) -> Self {
+  pub fn set_all(f: f32) -> Self {
     m128(unsafe { _mm_set1_ps(f) })
   }
 
@@ -26,24 +38,43 @@ impl m128 {
     m128(unsafe { _mm_set_ss(f) })
   }
 
-  /// Returns a register with all lanes zero.
-  pub fn zeroed() -> Self {
-    m128(unsafe { _mm_setzero_ps() })
+  /// Loads an array of 16-byte aligned `f32` values, with each index matching
+  /// each lane.
+  pub fn load(al_fs_ref: &Align16<[f32; 4]>) -> Self {
+    // TODO: TEST THAT INDEX 0 GOES INTO LANE 0.
+    let p = al_fs_ref as *const Align16<[f32; 4]> as *const f32;
+    debug_assert!(p as usize % 16 == 0);
+    m128(unsafe { _mm_load_ps(p) })
+  }
+
+  /// Loads an array of 16-byte aligned `f32` values, with reverse ordering.
+  pub fn loadr(al_fs_ref: &Align16<[f32; 4]>) -> Self {
+    // TODO: TEST THAT INDEX 3 GOES INTO LANE 0.
+    let p = al_fs_ref as *const Align16<[f32; 4]> as *const f32;
+    debug_assert!(p as usize % 16 == 0);
+    m128(unsafe { _mm_loadr_ps(p) })
+  }
+
+  /// Loads an array of `f32` values, without any required alignment.
+  pub fn loadu(fs_ref: &[f32; 4]) -> Self {
+    let p = fs_ref as *const [f32; 4] as *const f32;
+    debug_assert!(p as usize % 16 == 0);
+    m128(unsafe { _mm_loadr_ps(p) })
   }
 
   /// Loads the `f32` referenced into all lanes.
-  pub fn load1(f_ref: &f32) -> Self {
+  pub fn load_all(f_ref: &f32) -> Self {
     m128(unsafe { _mm_load1_ps(f_ref) })
-  }
-
-  /// Loads an array of 16-byte aligned `f32` values.
-  pub fn load(al_fs: Align16<[f32; 4]>) -> Self {
-    m128(unsafe { _mm_load_ps(al_fs.0.as_ptr()) })
   }
 
   /// Loads the `f32` referenced into the lowest lane, others are 0.
   pub fn load_single(f_ref: &f32) -> Self {
     m128(unsafe { _mm_load_ss(f_ref) })
+  }
+
+  /// Returns a register with all lanes zero.
+  pub fn zeroed() -> Self {
+    m128(unsafe { _mm_setzero_ps() })
   }
 }
 
@@ -266,9 +297,102 @@ impl m128 {
     m128(unsafe { _mm_div_ss(self.0, other.0) })
   }
 
-  /// Reads the `MXCSR` control and status register.
-  #[allow(bad_style)]
-  pub fn get_MXCSR() -> u32 {
-    unsafe { _mm_getcsr() }
+  /// f32x4 lanewise maximum of `self` and `other`
+  pub fn max(self, other: m128) -> m128 {
+    m128(unsafe { _mm_max_ps(self.0, other.0) })
+  }
+
+  /// low lane is max of `self` and `other`, other lanes are `self`.
+  pub fn max_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_max_ss(self.0, other.0) })
+  }
+
+  /// f32x4 lanewise minimum of `self` and `other`
+  pub fn min(self, other: m128) -> m128 {
+    m128(unsafe { _mm_min_ps(self.0, other.0) })
+  }
+
+  /// low lane is min of `self` and `other`, other lanes are `self`.
+  pub fn min_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_min_ss(self.0, other.0) })
+  }
+
+  /// output uses the low lane of `other` and the rest are `self`.
+  pub fn move_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_move_ss(self.0, other.0) })
+  }
+
+  /// High lanes of `other` become the low lanes of the output, the high lanes
+  /// of the output are the high lanes of `self`.
+  ///
+  /// ```txt
+  /// lane:   3  2  1  0
+  /// self:  [a, b, c, d]
+  /// other: [e, f, g, h]
+  /// -------------------
+  /// out:   [a, b, e, f]
+  /// ```
+  pub fn move_high_low(self, other: m128) -> m128 {
+    m128(unsafe { _mm_movehl_ps(self.0, other.0) })
+  }
+
+  /// Low lanes of `other` become the high lanes of the output, the low lanes of
+  /// the output are the low lanes of `self`.
+  ///
+  /// ```txt
+  /// lane:   3  2  1  0
+  /// self:  [a, b, c, d]
+  /// other: [e, f, g, h]
+  /// -------------------
+  /// out:   [g, h, c, d]
+  /// ```
+  pub fn move_low_high(self, other: m128) -> m128 {
+    m128(unsafe { _mm_movelh_ps(self.0, other.0) })
+  }
+
+  /// Sets bits 0 through 3 of the output based on the most significant bits of
+  /// lanes 0 through 3.
+  pub fn move_mask(self) -> i32 {
+    unsafe { _mm_movemask_ps(self.0) }
+  }
+
+  /// f32x4 lanewise multiplication.
+  pub fn mul(self, other: m128) -> m128 {
+    m128(unsafe { _mm_mul_ps(self.0, other.0) })
+  }
+
+  /// low lane is `self*other`, other lanes are `self`.
+  pub fn mul_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_mul_ss(self.0, other.0) })
+  }
+
+  /// bitwise `self | other`.
+  pub fn or(self, other: m128) -> m128 {
+    m128(unsafe { _mm_or_ps(self.0, other.0) })
+  }
+
+  /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
+  /// 
+  /// Maximum relative error for the approximation is `1.5*2^-12`.
+  pub fn reciprocal(self) -> m128 {
+    m128(unsafe { _mm_rcp_ps (self.0) })
+  }
+
+  /// As [reciprocal](m128::reciprocal) in the low lane, other lanes unchanged.
+  pub fn reciprocal_single(self) -> m128 {
+    m128(unsafe { _mm_rcp_ss (self.0) })
+  }
+
+  /// f32x4 lanewise reciprocal square root approximation: `1.0/sqrt(self[n])`
+  /// 
+  /// Maximum relative error for the approximation is `1.5*2^-12`.
+  pub fn reciprocal_sqrt(self) -> m128 {
+    m128(unsafe { _mm_rsqrt_ps (self.0) })
+  }
+
+  /// As [reciprocal_sqrt](m128::reciprocal_sqrt) in the low lane, other lanes
+  /// unchanged.
+  pub fn reciprocal_sqrt_single(self) -> m128 {
+    m128(unsafe { _mm_rsqrt_ss (self.0) })
   }
 }

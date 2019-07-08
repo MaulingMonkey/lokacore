@@ -46,27 +46,42 @@ macro_rules! impl_unsafe_marker_for_array {
   }
 }
 
-/// Wrapper to make the inner value be aligned to a minimum of 2.
+/// Wrapper inner value to a minimum of 2.
+///
+/// This is for alignment shenanigans, you're not expected to use it in a
+/// struct, more just in function arguments and such.
 #[derive(Debug, Clone, Copy)]
 #[repr(align(2))]
 pub struct Align2<T>(pub T);
 
-/// Wrapper to make the inner value be aligned to a minimum of 4.
+/// Wrapper inner value to a minimum of 4.
+///
+/// This is for alignment shenanigans, you're not expected to use it in a
+/// struct, more just in function arguments and such.
 #[derive(Debug, Clone, Copy)]
 #[repr(align(4))]
 pub struct Align4<T>(pub T);
 
-/// Wrapper to make the inner value be aligned to a minimum of 8.
+/// Wrapper inner value to a minimum of 8.
+///
+/// This is for alignment shenanigans, you're not expected to use it in a
+/// struct, more just in function arguments and such.
 #[derive(Debug, Clone, Copy)]
 #[repr(align(8))]
 pub struct Align8<T>(pub T);
 
-/// Wrapper to make the inner value be aligned to a minimum of 16.
+/// Wrapper inner value to a minimum of 16.
+///
+/// This is for alignment shenanigans, you're not expected to use it in a
+/// struct, more just in function arguments and such.
 #[derive(Debug, Clone, Copy)]
 #[repr(align(16))]
 pub struct Align16<T>(pub T);
 
-/// Wrapper to make the inner value be aligned to a minimum of 32.
+/// Wrapper inner value to a minimum of 32.
+///
+/// This is for alignment shenanigans, you're not expected to use it in a
+/// struct, more just in function arguments and such.
 #[derive(Debug, Clone, Copy)]
 #[repr(align(32))]
 pub struct Align32<T>(pub T);

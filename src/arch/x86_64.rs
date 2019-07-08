@@ -4,6 +4,10 @@ use super::*;
 
 use core::arch::x86_64::*;
 
+// Note(Lokathor): THE SAFETY OF THE SSE AND SSE2 MODULES DEPENDS UPON COMPILE
+// TIME FEATURE SETTINGS. THEY DO NOT PERFORM ANY RUNTIME FEATURE DETECTION. YOU
+// SHOULD NOT REMOVE THE TARGET FEATURE ATTRIBUTES FOR ANY REASON.
+
 #[cfg(target_feature = "sse")]
 mod sse;
 #[cfg(target_feature = "sse")]
