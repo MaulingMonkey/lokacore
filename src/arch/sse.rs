@@ -69,6 +69,7 @@ fn test_shuffle() {
 
 /// Reads the `MXCSR` control and status register.
 #[allow(bad_style)]
+#[inline(always)]
 pub fn get_MXCSR() -> u32 {
   unsafe { _mm_getcsr() }
 }
@@ -79,6 +80,7 @@ pub fn get_MXCSR() -> u32 {
 ///
 /// TODO: make this safe wrapped.
 #[allow(bad_style)]
+#[inline(always)]
 pub unsafe fn set_MXCSR(val: u32) {
   _mm_setcsr(val)
 }
@@ -94,6 +96,7 @@ pub fn get_exception_mask() -> u32 {
 /// **WARNING:** an unmasked exception calls the exception handler, and the
 /// standard exception handler in Rust will simply terminate _the entire
 /// process_.
+#[inline(always)]
 pub unsafe fn set_exception_mask(mask: u32) {
   if mask & !ALL_EXCEPTIONS > 0 {
     panic!("Illegal exception mask input: {}", mask)
@@ -103,12 +106,14 @@ pub unsafe fn set_exception_mask(mask: u32) {
 }
 
 /// Gets the current exception status.
+#[inline(always)]
 pub fn get_exception_state() -> u32 {
   unsafe { _MM_GET_EXCEPTION_STATE() }
 }
 
 /// Sets the current [exception
 /// state](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags)
+#[inline(always)]
 pub fn set_exception_state(state: u32) {
   if state & !ALL_EXCEPTIONS > 0 {
     panic!("Illegal exception state input: {}", state)
@@ -118,12 +123,14 @@ pub fn set_exception_state(state: u32) {
 }
 
 /// If values that would be denormalized are set to zero instead.
+#[inline(always)]
 pub fn get_flush_zero_mode() -> u32 {
   unsafe { _MM_GET_FLUSH_ZERO_MODE() }
 }
 
 /// Sets the [flush to zero
 /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#denormals-are-zeroflush-to-zero-mode)
+#[inline(always)]
 pub fn set_flush_zero_mode(mode: u32) {
   match mode {
     _MM_FLUSH_ZERO_OFF | _MM_FLUSH_ZERO_ON => unsafe { _MM_SET_FLUSH_ZERO_MODE(mode) },
@@ -132,6 +139,7 @@ pub fn set_flush_zero_mode(mode: u32) {
 }
 
 /// The current rounding mode.
+#[inline(always)]
 pub fn get_rounding_mode() -> u32 {
   unsafe { _MM_GET_ROUNDING_MODE() }
 }
@@ -139,6 +147,7 @@ pub fn get_rounding_mode() -> u32 {
 /// Sets the [rounding
 /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
 /// of the current thread.
+#[inline(always)]
 pub fn set_rounding_mode(mode: u32) {
   match mode {
     _MM_ROUND_NEAREST | _MM_ROUND_DOWN | _MM_ROUND_UP | _MM_ROUND_TOWARD_ZERO => unsafe {
@@ -152,6 +161,7 @@ pub fn set_rounding_mode(mode: u32) {
 /// [_mm_sfence](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html),
 /// just marked safe. This forces all store-to-memory operations before this to
 /// be globally visible before any such operations after.
+#[inline(always)]
 pub fn store_fence() {
   unsafe { _mm_sfence() }
 }
@@ -163,6 +173,7 @@ pub fn store_fence() {
 /// An invalid pointer will not cause UB but it can dramatically _reduce_
 /// performance, so be mindful.
 #[allow(bad_style)]
+#[inline(always)]
 pub fn prefetch_T0(p: *const impl Sized) {
   unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T0) }
 }
@@ -174,6 +185,7 @@ pub fn prefetch_T0(p: *const impl Sized) {
 /// An invalid pointer will not cause UB but it can dramatically _reduce_
 /// performance, so be mindful.
 #[allow(bad_style)]
+#[inline(always)]
 pub fn prefetch_T1(p: *const impl Sized) {
   unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T1) }
 }
@@ -185,6 +197,7 @@ pub fn prefetch_T1(p: *const impl Sized) {
 /// An invalid pointer will not cause UB but it can dramatically _reduce_
 /// performance, so be mindful.
 #[allow(bad_style)]
+#[inline(always)]
 pub fn prefetch_T2(p: *const impl Sized) {
   unsafe { _mm_prefetch(p as *const i8, _MM_HINT_T2) }
 }
@@ -196,28 +209,10 @@ pub fn prefetch_T2(p: *const impl Sized) {
 /// It's only a hint, the actual implementation depends on the particular CPU.
 /// An invalid pointer will not cause UB but it can dramatically _reduce_
 /// performance, so be mindful.
+#[inline(always)]
 pub fn prefetch_nontemporal(p: *const impl Sized) {
   unsafe { _mm_prefetch(p as *const i8, _MM_HINT_NTA) }
 }
-
-// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_prefetch.html
-
-// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html
-
-// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html
-
-// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_shuffle_ps.html
-
-// TODO: Get/Set Exception Mask
-
-// TODO: Get/Set Exception State
-
-// TODO: Get/Set Flush Zero Mode
-
-// TODO: Get/Set Rounding Mode
-
-// TODO: Sort all methods into blocks with big labels so that people can find
-// what they want within the rustdoc easier.
 
 /// Treats the inputs as rows of a 4x4 matrix and transposes the matrix.
 ///
@@ -231,14 +226,17 @@ pub fn prefetch_nontemporal(p: *const impl Sized) {
 /// row2 := _mm_movelh_ps(tmp1, tmp3);
 /// row3 := _mm_movehl_ps(tmp3, tmp1);
 /// ```
+#[inline(always)]
 pub fn transpose4(row0: &mut m128, row1: &mut m128, row2: &mut m128, row3: &mut m128) {
   unsafe { _MM_TRANSPOSE4_PS(&mut row0.0, &mut row1.0, &mut row2.0, &mut row3.0) }
 }
 
+/// # Set
 impl m128 {
   /// Sets the floats into a register, high to low. The first argument is the
   /// "highest" lane index (bits 96..=127), and arguments after that proceed
   /// down from there.
+  #[inline(always)]
   pub fn set(e3: f32, e2: f32, e1: f32, e0: f32) -> Self {
     m128(unsafe { _mm_set_ps(e3, e2, e1, e0) })
   }
@@ -246,66 +244,74 @@ impl m128 {
   /// Sets the floats into a register, low to high. The first argument is the
   /// "lowest" lane index (bits 0..=31), and arguments after that proceed up
   /// from there.
+  #[inline(always)]
   pub fn setr(e3: f32, e2: f32, e1: f32, e0: f32) -> Self {
     m128(unsafe { _mm_setr_ps(e3, e2, e1, e0) })
   }
 
   /// Sets the given value as all lanes in the register.
+  #[inline(always)]
   pub fn set_all(f: f32) -> Self {
     m128(unsafe { _mm_set1_ps(f) })
   }
 
   /// Sets the given value as the lowest lane, other lanes zero.
+  #[inline(always)]
   pub fn set_single(f: f32) -> Self {
     m128(unsafe { _mm_set_ss(f) })
   }
 
+  /// Returns a register with all lanes zero.
+  #[inline(always)]
+  pub fn zeroed() -> Self {
+    m128(unsafe { _mm_setzero_ps() })
+  }
+}
+
+/// # Load
+impl m128 {
   /// Loads an array of 16-byte aligned `f32` values, with each index matching
   /// each lane.
-  pub fn load(al_fs_ref: &Align16<[f32; 4]>) -> Self {
+  #[inline(always)]
+  pub fn load(arr: &Align16<[f32; 4]>) -> Self {
     // TODO: TEST THAT INDEX 0 GOES INTO LANE 0.
-    let p = al_fs_ref as *const Align16<[f32; 4]> as *const f32;
+    let p = arr as *const Align16<[f32; 4]> as *const f32;
     debug_assert!(p as usize % 16 == 0);
     m128(unsafe { _mm_load_ps(p) })
   }
 
   /// Loads an array of 16-byte aligned `f32` values, with reverse ordering.
-  pub fn loadr(al_fs_ref: &Align16<[f32; 4]>) -> Self {
+  #[inline(always)]
+  pub fn loadr(arr: &Align16<[f32; 4]>) -> Self {
     // TODO: TEST THAT INDEX 3 GOES INTO LANE 0.
-    let p = al_fs_ref as *const Align16<[f32; 4]> as *const f32;
+    let p = arr as *const Align16<[f32; 4]> as *const f32;
     debug_assert!(p as usize % 16 == 0);
     m128(unsafe { _mm_loadr_ps(p) })
   }
 
   /// Loads an array of `f32` values, without any required alignment.
-  pub fn loadu(fs_ref: &[f32; 4]) -> Self {
-    let p = fs_ref as *const [f32; 4] as *const f32;
+  #[inline(always)]
+  pub fn loadu(arr: &[f32; 4]) -> Self {
+    let p = arr as *const [f32; 4] as *const f32;
     debug_assert!(p as usize % 16 == 0);
     m128(unsafe { _mm_loadr_ps(p) })
   }
 
   /// Loads the `f32` referenced into all lanes.
-  pub fn load_all(f_ref: &f32) -> Self {
-    m128(unsafe { _mm_load1_ps(f_ref) })
+  #[inline(always)]
+  pub fn load_all(f: &f32) -> Self {
+    m128(unsafe { _mm_load1_ps(f) })
   }
 
   /// Loads the `f32` referenced into the lowest lane, others are 0.
-  pub fn load_single(f_ref: &f32) -> Self {
-    m128(unsafe { _mm_load_ss(f_ref) })
+  #[inline(always)]
+  pub fn load_single(f: &f32) -> Self {
+    m128(unsafe { _mm_load_ss(f) })
   }
+}
 
-  /// Returns a register with all lanes zero.
-  pub fn zeroed() -> Self {
-    m128(unsafe { _mm_setzero_ps() })
-  }
-
-  /// Store the lowest lane to all slots in the array.
-  pub fn store_all(self, addr: &mut Align16<[f32; 4]>) {
-    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
-    debug_assert!(p as usize % 16 == 0);
-    unsafe { _mm_store1_ps(p, self.0) };
-  }
-
+/// # Store
+impl m128 {
   /// Store the lanes into the slots of the array. Lowest lane to lowest index,
   /// and so on.
   pub fn store(self, addr: &mut Align16<[f32; 4]>) {
@@ -322,14 +328,6 @@ impl m128 {
     unsafe { _mm_storer_ps(p, self.0) };
   }
 
-  /// Store the lanes into the slots of the array with a non-temporal memory
-  /// hint. Lowest lane to lowest index, and so on.
-  pub fn store_nontemporal(self, addr: &mut Align16<[f32; 4]>) {
-    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
-    debug_assert!(p as usize % 16 == 0);
-    unsafe { _mm_stream_ps(p, self.0) };
-  }
-
   /// Store the lanes into the slots of the array. Lowest lane to lowest index,
   /// and so on.
   pub fn storeu(self, addr: &mut [f32; 4]) {
@@ -338,21 +336,49 @@ impl m128 {
     unsafe { _mm_storeu_ps(p, self.0) };
   }
 
+  /// Store the lowest lane to all slots in the array.
+  pub fn store_all(self, addr: &mut Align16<[f32; 4]>) {
+    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_store1_ps(p, self.0) };
+  }
+
   /// Store the lowest lane to the address.
   pub fn store_single(self, addr: &mut f32) {
     unsafe { _mm_store_ss(addr, self.0) };
   }
 
+  /// Store the lanes into the slots of the array with a non-temporal memory
+  /// hint. Lowest lane to lowest index, and so on.
+  pub fn store_nontemporal(self, addr: &mut Align16<[f32; 4]>) {
+    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_stream_ps(p, self.0) };
+  }
+}
+
+/// # Bulk Math Operations
+impl m128 {
   /// f32x4 lanewise addition
   pub fn add(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ps(self.0, other.0) })
   }
 
+}
+
+/// # Single Math Operations
+///
+/// These operations all only affect the lowest lane. Other lanes of `self` are
+/// unchanged in the output.
+impl m128 {
   /// low lane is `self+other`, other lanes are just `self`
   pub fn add_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ss(self.0, other.0) })
   }
+}
 
+/// # Bitwise Operations
+impl m128 {
   /// bitwise `self & other`.
   pub fn and(self, other: m128) -> m128 {
     m128(unsafe { _mm_and_ps(self.0, other.0) })
@@ -363,6 +389,19 @@ impl m128 {
     m128(unsafe { _mm_andnot_ps(self.0, other.0) })
   }
 
+  /// bitwise `self | other`.
+  pub fn or(self, other: m128) -> m128 {
+    m128(unsafe { _mm_or_ps(self.0, other.0) })
+  }
+
+  /// bitwise `self XOR other`.
+  pub fn xor(self, other: m128) -> m128 {
+    m128(unsafe { _mm_xor_ps(self.0, other.0) })
+  }
+}
+
+/// # Comparisons with `m128` output
+impl m128 {
   /// lanewise `self == other`, 0 for `false`, all bits for `true`.
   pub fn cmp_eq(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpeq_ps(self.0, other.0) })
@@ -484,7 +523,12 @@ impl m128 {
   pub fn cmp_nan_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpunord_ss(self.0, other.0) })
   }
+}
 
+/// # Compare with int output
+/// 
+/// Compares only the lowest lanes of `self` and `other`
+impl m128 {
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
   pub fn comi_eq_single(self, other: m128) -> i32 {
     unsafe { _mm_comieq_ss(self.0, other.0) }
@@ -514,6 +558,10 @@ impl m128 {
   pub fn comi_neq_single(self, other: m128) -> i32 {
     unsafe { _mm_comineq_ss(self.0, other.0) }
   }
+}
+
+/// # Other Ops
+impl m128 {
 
   /// Converts the `i32` into the lowest lane, other lanes copy `self`.
   pub fn cvt_i32f32_single(self, b: i32) -> m128 {
@@ -632,11 +680,6 @@ impl m128 {
     m128(unsafe { _mm_mul_ss(self.0, other.0) })
   }
 
-  /// bitwise `self | other`.
-  pub fn or(self, other: m128) -> m128 {
-    m128(unsafe { _mm_or_ps(self.0, other.0) })
-  }
-
   /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
   ///
   /// Maximum relative error for the approximation is `1.5*2^-12`.
@@ -748,10 +791,5 @@ impl m128 {
   /// ```
   pub fn unpack_low(self, other: m128) -> m128 {
     m128(unsafe { _mm_unpacklo_ps(self.0, other.0) })
-  }
-
-  /// bitwise `self XOR other`.
-  pub fn xor(self, other: m128) -> m128 {
-    m128(unsafe { _mm_xor_ps(self.0, other.0) })
   }
 }
