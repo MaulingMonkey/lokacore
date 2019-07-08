@@ -1,5 +1,9 @@
 //! Intrinsics for the [x86](https://en.wikipedia.org/wiki/X86) processor family.
 
+use super::*;
+
+use core::arch::x86::*;
+
 #[cfg(target_feature = "sse")]
 #[path = "sse.rs"]
 mod sse;

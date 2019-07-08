@@ -364,6 +364,30 @@ impl m128 {
     m128(unsafe { _mm_add_ps(self.0, other.0) })
   }
 
+  /// f32x4 lanewise division.
+  pub fn div(self, other: m128) -> m128 {
+    m128(unsafe { _mm_div_ps(self.0, other.0) })
+  }
+
+  /// f32x4 lanewise multiplication.
+  pub fn mul(self, other: m128) -> m128 {
+    m128(unsafe { _mm_mul_ps(self.0, other.0) })
+  }
+
+  /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
+  ///
+  /// Maximum relative error for the approximation is `1.5*2^-12`.
+  pub fn reciprocal(self) -> m128 {
+    m128(unsafe { _mm_rcp_ps(self.0) })
+  }
+
+  /// f32x4 lanewise reciprocal square root approximation: `1.0/sqrt(self[n])`
+  ///
+  /// Maximum relative error for the approximation is `1.5*2^-12`.
+  pub fn reciprocal_sqrt(self) -> m128 {
+    m128(unsafe { _mm_rsqrt_ps(self.0) })
+  }
+
 }
 
 /// # Single Math Operations
@@ -374,6 +398,27 @@ impl m128 {
   /// low lane is `self+other`, other lanes are just `self`
   pub fn add_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ss(self.0, other.0) })
+  }
+
+  /// low lane is `self/other`, other lanes are `self`.
+  pub fn div_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_div_ss(self.0, other.0) })
+  }
+
+  /// low lane is `self*other`, other lanes are `self`.
+  pub fn mul_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_mul_ss(self.0, other.0) })
+  }
+
+  /// As [reciprocal](m128::reciprocal) in the low lane, other lanes unchanged.
+  pub fn reciprocal_single(self) -> m128 {
+    m128(unsafe { _mm_rcp_ss(self.0) })
+  }
+
+  /// As [reciprocal_sqrt](m128::reciprocal_sqrt) in the low lane, other lanes
+  /// unchanged.
+  pub fn reciprocal_sqrt_single(self) -> m128 {
+    m128(unsafe { _mm_rsqrt_ss(self.0) })
   }
 }
 
@@ -560,9 +605,8 @@ impl m128 {
   }
 }
 
-/// # Other Ops
+/// # Conversions
 impl m128 {
-
   /// Converts the `i32` into the lowest lane, other lanes copy `self`.
   pub fn cvt_i32f32_single(self, b: i32) -> m128 {
     m128(unsafe { _mm_cvt_si2ss(self.0, b) })
@@ -600,17 +644,10 @@ impl m128 {
   pub fn cvt_f32_single(self) -> f32 {
     unsafe { _mm_cvtss_f32(self.0) }
   }
+}
 
-  /// f32x4 lanewise division.
-  pub fn div(self, other: m128) -> m128 {
-    m128(unsafe { _mm_div_ps(self.0, other.0) })
-  }
-
-  /// low lane is `self/other`, other lanes are `self`.
-  pub fn div_single(self, other: m128) -> m128 {
-    m128(unsafe { _mm_div_ss(self.0, other.0) })
-  }
-
+/// # Other Ops
+impl m128 {
   /// f32x4 lanewise maximum of `self` and `other`
   pub fn max(self, other: m128) -> m128 {
     m128(unsafe { _mm_max_ps(self.0, other.0) })
@@ -668,41 +705,6 @@ impl m128 {
   /// lanes 0 through 3.
   pub fn move_mask(self) -> i32 {
     unsafe { _mm_movemask_ps(self.0) }
-  }
-
-  /// f32x4 lanewise multiplication.
-  pub fn mul(self, other: m128) -> m128 {
-    m128(unsafe { _mm_mul_ps(self.0, other.0) })
-  }
-
-  /// low lane is `self*other`, other lanes are `self`.
-  pub fn mul_single(self, other: m128) -> m128 {
-    m128(unsafe { _mm_mul_ss(self.0, other.0) })
-  }
-
-  /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
-  ///
-  /// Maximum relative error for the approximation is `1.5*2^-12`.
-  pub fn reciprocal(self) -> m128 {
-    m128(unsafe { _mm_rcp_ps(self.0) })
-  }
-
-  /// As [reciprocal](m128::reciprocal) in the low lane, other lanes unchanged.
-  pub fn reciprocal_single(self) -> m128 {
-    m128(unsafe { _mm_rcp_ss(self.0) })
-  }
-
-  /// f32x4 lanewise reciprocal square root approximation: `1.0/sqrt(self[n])`
-  ///
-  /// Maximum relative error for the approximation is `1.5*2^-12`.
-  pub fn reciprocal_sqrt(self) -> m128 {
-    m128(unsafe { _mm_rsqrt_ps(self.0) })
-  }
-
-  /// As [reciprocal_sqrt](m128::reciprocal_sqrt) in the low lane, other lanes
-  /// unchanged.
-  pub fn reciprocal_sqrt_single(self) -> m128 {
-    m128(unsafe { _mm_rsqrt_ss(self.0) })
   }
 
   /// f32x4 lanewise square root.
