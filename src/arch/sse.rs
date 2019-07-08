@@ -521,6 +521,7 @@ impl m128 {
   }
 
   /// Converts the `i64` into the lowest lane, other lanes copy `self`.
+  #[cfg(target_arch = "x86_64")]
   pub fn cvt_i64f32_single(self, b: i64) -> m128 {
     m128(unsafe { _mm_cvtsi64_ss(self.0, b) })
   }
@@ -531,6 +532,7 @@ impl m128 {
   }
 
   /// Round (by mode) the lowest lane to `i64` and returns it.
+  #[cfg(target_arch = "x86_64")]
   pub fn cvt_f32i64_single(self) -> i64 {
     unsafe { _mm_cvtss_si64(self.0) }
   }
@@ -541,6 +543,7 @@ impl m128 {
   }
 
   /// Truncate the lowest lane to `i64` and returns it.
+  #[cfg(target_arch = "x86_64")]
   pub fn cvt_f32i64_single_trunc(self) -> i64 {
     unsafe { _mm_cvttss_si64(self.0) }
   }

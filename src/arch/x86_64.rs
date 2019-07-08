@@ -9,11 +9,13 @@ use core::arch::x86_64::*;
 // SHOULD NOT REMOVE THE TARGET FEATURE ATTRIBUTES FOR ANY REASON.
 
 #[cfg(target_feature = "sse")]
+#[path = "sse.rs"]
 mod sse;
 #[cfg(target_feature = "sse")]
 pub use sse::*;
 
 #[cfg(target_feature = "sse2")]
+#[path = "sse2.rs"]
 mod sse2;
 #[cfg(target_feature = "sse2")]
 pub use sse2::*;
