@@ -10,9 +10,37 @@ pub fn get_MXCSR() -> u32 {
 
 // TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html
 
+// TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html
+
 // TODO: https://doc.rust-lang.org/core/arch/x86_64/fn._mm_shuffle_ps.html
 
-/// # Constructors
+// TODO: Get/Set Exception Mask
+
+// TODO: Get/Set Exception State
+
+// TODO: Get/Set Flush Zero Mode
+
+// TODO: Get/Set Rounding Mode
+
+// TODO: Sort all methods into blocks with big labels so that people can find
+// what they want within the rustdoc easier.
+
+/// Treats the inputs as rows of a 4x4 matrix and transposes the matrix.
+///
+/// ```txt
+/// tmp0 := _mm_unpacklo_ps(row0, row1);
+/// tmp2 := _mm_unpacklo_ps(row2, row3);
+/// tmp1 := _mm_unpackhi_ps(row0, row1);
+/// tmp3 := _mm_unpackhi_ps(row2, row3);
+/// row0 := _mm_movelh_ps(tmp0, tmp2);
+/// row1 := _mm_movehl_ps(tmp2, tmp0);
+/// row2 := _mm_movelh_ps(tmp1, tmp3);
+/// row3 := _mm_movehl_ps(tmp3, tmp1);
+/// ```
+pub fn transpose4(row0: &mut m128, row1: &mut m128, row2: &mut m128, row3: &mut m128) {
+  unsafe { _MM_TRANSPOSE4_PS(&mut row0.0, &mut row1.0, &mut row2.0, &mut row3.0) }
+}
+
 impl m128 {
   /// Sets the floats into a register, high to low. The first argument is the
   /// "highest" lane index (bits 96..=127), and arguments after that proceed
@@ -76,10 +104,51 @@ impl m128 {
   pub fn zeroed() -> Self {
     m128(unsafe { _mm_setzero_ps() })
   }
-}
 
-/// # Operations (TODO: sort these better)
-impl m128 {
+  /// Store the lowest lane to all slots in the array.
+  pub fn store_all(self, addr: &mut Align16<[f32; 4]>) {
+    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_store1_ps(p, self.0) };
+  }
+
+  /// Store the lanes into the slots of the array. Lowest lane to lowest index,
+  /// and so on.
+  pub fn store(self, addr: &mut Align16<[f32; 4]>) {
+    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_store_ps(p, self.0) };
+  }
+
+  /// Store the lanes into the slots of the array. Highest lane to lowest index,
+  /// and so on.
+  pub fn storer(self, addr: &mut Align16<[f32; 4]>) {
+    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_storer_ps(p, self.0) };
+  }
+
+  /// Store the lanes into the slots of the array with a non-temporal memory
+  /// hint. Lowest lane to lowest index, and so on.
+  pub fn store_nontemporal(self, addr: &mut Align16<[f32; 4]>) {
+    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_stream_ps(p, self.0) };
+  }
+
+  /// Store the lanes into the slots of the array. Lowest lane to lowest index,
+  /// and so on.
+  pub fn storeu(self, addr: &mut [f32; 4]) {
+    let p = addr as *mut [f32; 4] as *mut f32;
+    debug_assert!(p as usize % 16 == 0);
+    unsafe { _mm_storeu_ps(p, self.0) };
+  }
+
+  /// Store the lowest lane to the address.
+  pub fn store_single(self, addr: &mut f32) {
+    unsafe { _mm_store_ss(addr, self.0) };
+  }
+
   /// f32x4 lanewise addition
   pub fn add(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ps(self.0, other.0) })
@@ -372,27 +441,120 @@ impl m128 {
   }
 
   /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
-  /// 
+  ///
   /// Maximum relative error for the approximation is `1.5*2^-12`.
   pub fn reciprocal(self) -> m128 {
-    m128(unsafe { _mm_rcp_ps (self.0) })
+    m128(unsafe { _mm_rcp_ps(self.0) })
   }
 
   /// As [reciprocal](m128::reciprocal) in the low lane, other lanes unchanged.
   pub fn reciprocal_single(self) -> m128 {
-    m128(unsafe { _mm_rcp_ss (self.0) })
+    m128(unsafe { _mm_rcp_ss(self.0) })
   }
 
   /// f32x4 lanewise reciprocal square root approximation: `1.0/sqrt(self[n])`
-  /// 
+  ///
   /// Maximum relative error for the approximation is `1.5*2^-12`.
   pub fn reciprocal_sqrt(self) -> m128 {
-    m128(unsafe { _mm_rsqrt_ps (self.0) })
+    m128(unsafe { _mm_rsqrt_ps(self.0) })
   }
 
   /// As [reciprocal_sqrt](m128::reciprocal_sqrt) in the low lane, other lanes
   /// unchanged.
   pub fn reciprocal_sqrt_single(self) -> m128 {
-    m128(unsafe { _mm_rsqrt_ss (self.0) })
+    m128(unsafe { _mm_rsqrt_ss(self.0) })
+  }
+
+  /// f32x4 lanewise square root.
+  pub fn sqrt(self) -> m128 {
+    m128(unsafe { _mm_sqrt_ps(self.0) })
+  }
+
+  /// square root in the low lane, other lanes unchanged.
+  pub fn sqrt_single(self) -> m128 {
+    m128(unsafe { _mm_sqrt_ss(self.0) })
+  }
+
+  /// f32x4 lanewise subtraction, `self - other`.
+  pub fn sub(self, other: m128) -> m128 {
+    m128(unsafe { _mm_sub_ps(self.0, other.0) })
+  }
+
+  /// `a-b` in the low lane, other lanes unchanged.
+  pub fn sub_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_sub_ss(self.0, other.0) })
+  }
+
+  /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
+  ///
+  /// "Won't signal an exception for QNaNs."
+  pub fn ucomi_eq_single(self, other: m128) -> i32 {
+    unsafe { _mm_ucomieq_ss(self.0, other.0) }
+  }
+
+  /// Compares lowest lane, `self>=other`, 0 for `false`, 1 for `true`.
+  ///
+  /// "Won't signal an exception for QNaNs."
+  pub fn ucomi_ge_single(self, other: m128) -> i32 {
+    unsafe { _mm_ucomige_ss(self.0, other.0) }
+  }
+
+  /// Compares lowest lane, `self>other`, 0 for `false`, 1 for `true`.
+  ///
+  /// "Won't signal an exception for QNaNs."
+  pub fn ucomi_gt_single(self, other: m128) -> i32 {
+    unsafe { _mm_ucomigt_ss(self.0, other.0) }
+  }
+
+  /// Compares lowest lane, `self<=other`, 0 for `false`, 1 for `true`.
+  ///
+  /// "Won't signal an exception for QNaNs."
+  pub fn ucomi_le_single(self, other: m128) -> i32 {
+    unsafe { _mm_ucomile_ss(self.0, other.0) }
+  }
+
+  /// Compares lowest lane, `self<other`, 0 for `false`, 1 for `true`.
+  ///
+  /// "Won't signal an exception for QNaNs."
+  pub fn ucomi_lt_single(self, other: m128) -> i32 {
+    unsafe { _mm_ucomilt_ss(self.0, other.0) }
+  }
+
+  /// Compares lowest lane, `self!=other`, 0 for `false`, 1 for `true`.
+  ///
+  /// "Won't signal an exception for QNaNs."
+  pub fn ucomi_neq_single(self, other: m128) -> i32 {
+    unsafe { _mm_ucomineq_ss(self.0, other.0) }
+  }
+
+  /// Unpack and interleave high lanes of `self` and `other`
+  ///
+  /// ```txt
+  /// lane:   3  2  1  0
+  /// self:  [a, b, c, d]
+  /// other: [e, f, g, h]
+  /// -------------------
+  /// out:   [e, a, f, b]
+  /// ```
+  pub fn unpack_high(self, other: m128) -> m128 {
+    m128(unsafe { _mm_unpackhi_ps(self.0, other.0) })
+  }
+
+  /// Unpack and interleave low lanes of `self` and `other`
+  ///
+  /// ```txt
+  /// lane:   3  2  1  0
+  /// self:  [a, b, c, d]
+  /// other: [e, f, g, h]
+  /// -------------------
+  /// out:   [g, c, h, d]
+  /// ```
+  pub fn unpack_low(self, other: m128) -> m128 {
+    m128(unsafe { _mm_unpacklo_ps(self.0, other.0) })
+  }
+
+  /// bitwise `self XOR other`.
+  pub fn xor(self, other: m128) -> m128 {
+    m128(unsafe { _mm_xor_ps(self.0, other.0) })
   }
 }
