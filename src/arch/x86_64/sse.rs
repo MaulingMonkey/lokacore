@@ -1,5 +1,12 @@
 use super::*;
 
+const ALL_EXCEPTIONS: u32 = _MM_EXCEPT_INVALID
+  | _MM_EXCEPT_DENORM
+  | _MM_EXCEPT_DIV_ZERO
+  | _MM_EXCEPT_OVERFLOW
+  | _MM_EXCEPT_UNDERFLOW
+  | _MM_EXCEPT_INEXACT;
+
 /// Shuffles `a` and `b` into an output according to the indexes given.
 ///
 /// * The two low lanes come from `a`
@@ -12,7 +19,7 @@ use super::*;
 ///
 /// ```rust
 /// // Indexes are ordered high to low: 3 2 1 0
-/// 
+///
 /// use lokacore::{shuffle, arch::x86_64::m128};
 /// let a = m128::set(9.0, 8.0, 7.0, 6.0);
 /// let output = shuffle!(a, a, 0, 1, 3, 2);
@@ -32,15 +39,15 @@ macro_rules! shuffle {
     const I2: i32 = (($i2 as u8) & 0b11) as i32;
     const I3: i32 = (($i3 as u8) & 0b11) as i32;
     const IMM8: i32 = (I0 << 6 | I1 << 4 | I2 << 2 | I3) as i32;
-    #[cfg(all(target_arch = "x86", target_feature="sse"))]
+    #[cfg(all(target_arch = "x86", target_feature = "sse"))]
     {
       m128(unsafe { core::arch::x86::_mm_shuffle_ps($a.0, $b.0, IMM8) })
     }
-    #[cfg(all(target_arch = "x86_64", target_feature="sse"))]
+    #[cfg(all(target_arch = "x86_64", target_feature = "sse"))]
     {
       m128(unsafe { core::arch::x86_64::_mm_shuffle_ps($a.0, $b.0, IMM8) })
     }
-    #[cfg(not(target_feature="sse"))]
+    #[cfg(not(target_feature = "sse"))]
     {
       compile_error!("the shuffle macro requires 'sse' to be enabled.");
     }
@@ -66,9 +73,33 @@ pub fn get_MXCSR() -> u32 {
   unsafe { _mm_getcsr() }
 }
 
+/// Sets the `MXCSR` control and status register.
+///
+/// Modifications to this register only affect the current thread.
+///
+/// TODO: make this safe wrapped.
+#[allow(bad_style)]
+pub unsafe fn set_MXCSR(val: u32) {
+  _mm_setcsr(val)
+}
+
 /// Which exceptions are masked (ignored).
 pub fn get_exception_mask() -> u32 {
   unsafe { _MM_GET_EXCEPTION_MASK() }
+}
+
+/// Sets the [exception
+/// mask](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags)
+///
+/// **WARNING:** an unmasked exception calls the exception handler, and the
+/// standard exception handler in Rust will simply terminate _the entire
+/// process_.
+pub unsafe fn set_exception_mask(mask: u32) {
+  if mask & !ALL_EXCEPTIONS > 0 {
+    panic!("Illegal exception mask input: {}", mask)
+  } else {
+    _MM_SET_EXCEPTION_MASK(mask)
+  }
 }
 
 /// Gets the current exception status.
@@ -76,14 +107,45 @@ pub fn get_exception_state() -> u32 {
   unsafe { _MM_GET_EXCEPTION_STATE() }
 }
 
-/// If values that would be denormalized are set to zero instead. 
+/// Sets the current [exception
+/// state](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags)
+pub fn set_exception_state(state: u32) {
+  if state & !ALL_EXCEPTIONS > 0 {
+    panic!("Illegal exception state input: {}", state)
+  } else {
+    unsafe { _MM_SET_EXCEPTION_STATE(state) }
+  }
+}
+
+/// If values that would be denormalized are set to zero instead.
 pub fn get_flush_zero_mode() -> u32 {
   unsafe { _MM_GET_FLUSH_ZERO_MODE() }
+}
+
+/// Sets the [flush to zero
+/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#denormals-are-zeroflush-to-zero-mode)
+pub fn set_flush_zero_mode(mode: u32) {
+  match mode {
+    _MM_FLUSH_ZERO_OFF | _MM_FLUSH_ZERO_ON => unsafe { _MM_SET_FLUSH_ZERO_MODE(mode) },
+    _ => panic!("Illegal flush zero mode constant: {}", mode),
+  }
 }
 
 /// The current rounding mode.
 pub fn get_rounding_mode() -> u32 {
   unsafe { _MM_GET_ROUNDING_MODE() }
+}
+
+/// Sets the [rounding
+/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
+/// of the current thread.
+pub fn set_rounding_mode(mode: u32) {
+  match mode {
+    _MM_ROUND_NEAREST | _MM_ROUND_DOWN | _MM_ROUND_UP | _MM_ROUND_TOWARD_ZERO => unsafe {
+      _MM_SET_ROUNDING_MODE(mode)
+    },
+    _ => panic!("Illegal round mode constant: {}", mode),
+  }
 }
 
 /// As
