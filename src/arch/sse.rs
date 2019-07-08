@@ -18,9 +18,13 @@ const ALL_EXCEPTIONS: u32 = _MM_EXCEPT_INVALID
 /// lowest index.
 ///
 /// ```rust
-/// // Indexes are ordered high to low: 3 2 1 0
-///
+/// #[cfg(target_arch = "x86")]
+/// use lokacore::{shuffle, arch::x86::m128};
+/// #[cfg(target_arch = "x86_64")]
 /// use lokacore::{shuffle, arch::x86_64::m128};
+/// 
+/// // Indexes are ordered high to low: 3 2 1 0
+/// 
 /// let a = m128::set(9.0, 8.0, 7.0, 6.0);
 /// let output = shuffle!(a, a, 0, 1, 3, 2);
 /// let expected = m128::set(6.0, 7.0, 9.0, 8.0);
@@ -231,7 +235,7 @@ pub fn transpose4(row0: &mut m128, row1: &mut m128, row2: &mut m128, row3: &mut 
   unsafe { _MM_TRANSPOSE4_PS(&mut row0.0, &mut row1.0, &mut row2.0, &mut row3.0) }
 }
 
-/// # Set
+/// # SSE Operations
 impl m128 {
   /// Sets the floats into a register, high to low. The first argument is the
   /// "highest" lane index (bits 96..=127), and arguments after that proceed
@@ -266,10 +270,6 @@ impl m128 {
   pub fn zeroed() -> Self {
     m128(unsafe { _mm_setzero_ps() })
   }
-}
-
-/// # Load
-impl m128 {
   /// Loads an array of 16-byte aligned `f32` values, with each index matching
   /// each lane.
   #[inline(always)]
@@ -308,10 +308,7 @@ impl m128 {
   pub fn load_single(f: &f32) -> Self {
     m128(unsafe { _mm_load_ss(f) })
   }
-}
 
-/// # Store
-impl m128 {
   /// Store the lanes into the slots of the array. Lowest lane to lowest index,
   /// and so on.
   pub fn store(self, addr: &mut Align16<[f32; 4]>) {
@@ -355,10 +352,6 @@ impl m128 {
     debug_assert!(p as usize % 16 == 0);
     unsafe { _mm_stream_ps(p, self.0) };
   }
-}
-
-/// # Bulk Math Operations
-impl m128 {
   /// f32x4 lanewise addition
   pub fn add(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ps(self.0, other.0) })
@@ -388,13 +381,15 @@ impl m128 {
     m128(unsafe { _mm_rsqrt_ps(self.0) })
   }
 
-}
+  /// f32x4 lanewise square root.
+  pub fn sqrt(self) -> m128 {
+    m128(unsafe { _mm_sqrt_ps(self.0) })
+  }
 
-/// # Single Math Operations
-///
-/// These operations all only affect the lowest lane. Other lanes of `self` are
-/// unchanged in the output.
-impl m128 {
+  /// f32x4 lanewise subtraction, `self - other`.
+  pub fn sub(self, other: m128) -> m128 {
+    m128(unsafe { _mm_sub_ps(self.0, other.0) })
+  }
   /// low lane is `self+other`, other lanes are just `self`
   pub fn add_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ss(self.0, other.0) })
@@ -420,10 +415,17 @@ impl m128 {
   pub fn reciprocal_sqrt_single(self) -> m128 {
     m128(unsafe { _mm_rsqrt_ss(self.0) })
   }
-}
 
-/// # Bitwise Operations
-impl m128 {
+  /// square root in the low lane, other lanes unchanged.
+  pub fn sqrt_single(self) -> m128 {
+    m128(unsafe { _mm_sqrt_ss(self.0) })
+  }
+
+  /// `a-b` in the low lane, other lanes unchanged.
+  pub fn sub_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_sub_ss(self.0, other.0) })
+  }
+
   /// bitwise `self & other`.
   pub fn and(self, other: m128) -> m128 {
     m128(unsafe { _mm_and_ps(self.0, other.0) })
@@ -443,10 +445,7 @@ impl m128 {
   pub fn xor(self, other: m128) -> m128 {
     m128(unsafe { _mm_xor_ps(self.0, other.0) })
   }
-}
-
-/// # Comparisons with `m128` output
-impl m128 {
+  
   /// lanewise `self == other`, 0 for `false`, all bits for `true`.
   pub fn cmp_eq(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpeq_ps(self.0, other.0) })
@@ -568,12 +567,7 @@ impl m128 {
   pub fn cmp_nan_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpunord_ss(self.0, other.0) })
   }
-}
-
-/// # Compare with int output
-/// 
-/// Compares only the lowest lanes of `self` and `other`
-impl m128 {
+  
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
   pub fn comi_eq_single(self, other: m128) -> i32 {
     unsafe { _mm_comieq_ss(self.0, other.0) }
@@ -603,10 +597,7 @@ impl m128 {
   pub fn comi_neq_single(self, other: m128) -> i32 {
     unsafe { _mm_comineq_ss(self.0, other.0) }
   }
-}
-
-/// # Conversions
-impl m128 {
+  
   /// Converts the `i32` into the lowest lane, other lanes copy `self`.
   pub fn cvt_i32f32_single(self, b: i32) -> m128 {
     m128(unsafe { _mm_cvt_si2ss(self.0, b) })
@@ -644,23 +635,20 @@ impl m128 {
   pub fn cvt_f32_single(self) -> f32 {
     unsafe { _mm_cvtss_f32(self.0) }
   }
-}
 
-/// # Other Ops
-impl m128 {
   /// f32x4 lanewise maximum of `self` and `other`
   pub fn max(self, other: m128) -> m128 {
     m128(unsafe { _mm_max_ps(self.0, other.0) })
   }
 
-  /// low lane is max of `self` and `other`, other lanes are `self`.
-  pub fn max_single(self, other: m128) -> m128 {
-    m128(unsafe { _mm_max_ss(self.0, other.0) })
-  }
-
   /// f32x4 lanewise minimum of `self` and `other`
   pub fn min(self, other: m128) -> m128 {
     m128(unsafe { _mm_min_ps(self.0, other.0) })
+  }
+
+  /// low lane is max of `self` and `other`, other lanes are `self`.
+  pub fn max_single(self, other: m128) -> m128 {
+    m128(unsafe { _mm_max_ss(self.0, other.0) })
   }
 
   /// low lane is min of `self` and `other`, other lanes are `self`.
@@ -705,26 +693,6 @@ impl m128 {
   /// lanes 0 through 3.
   pub fn move_mask(self) -> i32 {
     unsafe { _mm_movemask_ps(self.0) }
-  }
-
-  /// f32x4 lanewise square root.
-  pub fn sqrt(self) -> m128 {
-    m128(unsafe { _mm_sqrt_ps(self.0) })
-  }
-
-  /// square root in the low lane, other lanes unchanged.
-  pub fn sqrt_single(self) -> m128 {
-    m128(unsafe { _mm_sqrt_ss(self.0) })
-  }
-
-  /// f32x4 lanewise subtraction, `self - other`.
-  pub fn sub(self, other: m128) -> m128 {
-    m128(unsafe { _mm_sub_ps(self.0, other.0) })
-  }
-
-  /// `a-b` in the low lane, other lanes unchanged.
-  pub fn sub_single(self, other: m128) -> m128 {
-    m128(unsafe { _mm_sub_ss(self.0, other.0) })
   }
 
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
