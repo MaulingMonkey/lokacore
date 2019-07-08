@@ -90,6 +90,7 @@ pub unsafe fn set_MXCSR(val: u32) {
 }
 
 /// Which exceptions are masked (ignored).
+#[inline(always)]
 pub fn get_exception_mask() -> u32 {
   unsafe { _MM_GET_EXCEPTION_MASK() }
 }
@@ -311,6 +312,7 @@ impl m128 {
 
   /// Store the lanes into the slots of the array. Lowest lane to lowest index,
   /// and so on.
+  #[inline(always)]
   pub fn store(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
     debug_assert!(p as usize % 16 == 0);
@@ -319,6 +321,7 @@ impl m128 {
 
   /// Store the lanes into the slots of the array. Highest lane to lowest index,
   /// and so on.
+  #[inline(always)]
   pub fn storer(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
     debug_assert!(p as usize % 16 == 0);
@@ -327,6 +330,7 @@ impl m128 {
 
   /// Store the lanes into the slots of the array. Lowest lane to lowest index,
   /// and so on.
+  #[inline(always)]
   pub fn storeu(self, addr: &mut [f32; 4]) {
     let p = addr as *mut [f32; 4] as *mut f32;
     debug_assert!(p as usize % 16 == 0);
@@ -334,6 +338,7 @@ impl m128 {
   }
 
   /// Store the lowest lane to all slots in the array.
+  #[inline(always)]
   pub fn store_all(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
     debug_assert!(p as usize % 16 == 0);
@@ -341,28 +346,34 @@ impl m128 {
   }
 
   /// Store the lowest lane to the address.
+  #[inline(always)]
   pub fn store_single(self, addr: &mut f32) {
     unsafe { _mm_store_ss(addr, self.0) };
   }
 
   /// Store the lanes into the slots of the array with a non-temporal memory
   /// hint. Lowest lane to lowest index, and so on.
+  #[inline(always)]
   pub fn store_nontemporal(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
     debug_assert!(p as usize % 16 == 0);
     unsafe { _mm_stream_ps(p, self.0) };
   }
+
   /// f32x4 lanewise addition
+  #[inline(always)]
   pub fn add(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ps(self.0, other.0) })
   }
 
   /// f32x4 lanewise division.
+  #[inline(always)]
   pub fn div(self, other: m128) -> m128 {
     m128(unsafe { _mm_div_ps(self.0, other.0) })
   }
 
   /// f32x4 lanewise multiplication.
+  #[inline(always)]
   pub fn mul(self, other: m128) -> m128 {
     m128(unsafe { _mm_mul_ps(self.0, other.0) })
   }
@@ -370,6 +381,7 @@ impl m128 {
   /// f32x4 lanewise reciprocal approximation: `1.0/self[n]`
   ///
   /// Maximum relative error for the approximation is `1.5*2^-12`.
+  #[inline(always)]
   pub fn reciprocal(self) -> m128 {
     m128(unsafe { _mm_rcp_ps(self.0) })
   }
@@ -377,131 +389,158 @@ impl m128 {
   /// f32x4 lanewise reciprocal square root approximation: `1.0/sqrt(self[n])`
   ///
   /// Maximum relative error for the approximation is `1.5*2^-12`.
+  #[inline(always)]
   pub fn reciprocal_sqrt(self) -> m128 {
     m128(unsafe { _mm_rsqrt_ps(self.0) })
   }
 
   /// f32x4 lanewise square root.
+  #[inline(always)]
   pub fn sqrt(self) -> m128 {
     m128(unsafe { _mm_sqrt_ps(self.0) })
   }
 
   /// f32x4 lanewise subtraction, `self - other`.
+  #[inline(always)]
   pub fn sub(self, other: m128) -> m128 {
     m128(unsafe { _mm_sub_ps(self.0, other.0) })
   }
-  /// low lane is `self+other`, other lanes are just `self`
+
+  /// low lane is `self+other`, other lanes are just `self`.
+  #[inline(always)]
   pub fn add_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_add_ss(self.0, other.0) })
   }
 
   /// low lane is `self/other`, other lanes are `self`.
+  #[inline(always)]
   pub fn div_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_div_ss(self.0, other.0) })
   }
 
   /// low lane is `self*other`, other lanes are `self`.
+  #[inline(always)]
   pub fn mul_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_mul_ss(self.0, other.0) })
   }
 
   /// As [reciprocal](m128::reciprocal) in the low lane, other lanes unchanged.
+  #[inline(always)]
   pub fn reciprocal_single(self) -> m128 {
     m128(unsafe { _mm_rcp_ss(self.0) })
   }
 
   /// As [reciprocal_sqrt](m128::reciprocal_sqrt) in the low lane, other lanes
   /// unchanged.
+  #[inline(always)]
   pub fn reciprocal_sqrt_single(self) -> m128 {
     m128(unsafe { _mm_rsqrt_ss(self.0) })
   }
 
   /// square root in the low lane, other lanes unchanged.
+  #[inline(always)]
   pub fn sqrt_single(self) -> m128 {
     m128(unsafe { _mm_sqrt_ss(self.0) })
   }
 
   /// `a-b` in the low lane, other lanes unchanged.
+  #[inline(always)]
   pub fn sub_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_sub_ss(self.0, other.0) })
   }
 
   /// bitwise `self & other`.
+  #[inline(always)]
   pub fn and(self, other: m128) -> m128 {
     m128(unsafe { _mm_and_ps(self.0, other.0) })
   }
 
   /// bitwise `!self & other`.
+  #[inline(always)]
   pub fn andnot(self, other: m128) -> m128 {
     m128(unsafe { _mm_andnot_ps(self.0, other.0) })
   }
 
   /// bitwise `self | other`.
+  #[inline(always)]
   pub fn or(self, other: m128) -> m128 {
     m128(unsafe { _mm_or_ps(self.0, other.0) })
   }
 
   /// bitwise `self XOR other`.
+  #[inline(always)]
   pub fn xor(self, other: m128) -> m128 {
     m128(unsafe { _mm_xor_ps(self.0, other.0) })
   }
   
   /// lanewise `self == other`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_eq(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpeq_ps(self.0, other.0) })
   }
 
   /// as [cmp_eq](m128::cmp_eq), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_eq_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpeq_ss(self.0, other.0) })
   }
 
   /// lanewise `self >= other`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_ge(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpge_ps(self.0, other.0) })
   }
 
   /// as [cmp_ge](m128::cmp_ge), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_ge_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpge_ss(self.0, other.0) })
   }
 
   /// lanewise `self > other`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_gt(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpgt_ps(self.0, other.0) })
   }
 
   /// as [cmp_gt](m128::cmp_gt), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_gt_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpgt_ss(self.0, other.0) })
   }
 
   /// lanewise `self <= other`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_le(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmple_ps(self.0, other.0) })
   }
 
   /// as [cmp_le](m128::cmp_le), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_le_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmple_ss(self.0, other.0) })
   }
 
   /// lanewise `self < other`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_lt(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmplt_ps(self.0, other.0) })
   }
 
   /// as [cmp_lt](m128::cmp_lt), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_lt_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmplt_ss(self.0, other.0) })
   }
 
   /// lanewise `self != other`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_neq(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpneq_ps(self.0, other.0) })
   }
 
   /// as [cmp_neq](m128::cmp_neq), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_neq_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpneq_ss(self.0, other.0) })
   }
@@ -509,154 +548,184 @@ impl m128 {
   /// lanewise `!(self >= other)`, 0 for `false`, all bits for `true`.
   ///
   /// Also this intrinsic triggers 3rd Impact _every time you use it_.
+  #[inline(always)]
   pub fn cmp_nge(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpnge_ps(self.0, other.0) })
   }
 
   /// as [cmp_nge](m128::cmp_nge), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_nge_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpnge_ss(self.0, other.0) })
   }
 
   /// lanewise `!(self > other)`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_ngt(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpngt_ps(self.0, other.0) })
   }
 
   /// as [cmp_ngt](m128::cmp_ngt), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_ngt_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpngt_ss(self.0, other.0) })
   }
 
   /// lanewise `!(self <= other)`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_nle(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpnle_ps(self.0, other.0) })
   }
 
   /// as [cmp_nle](m128::cmp_nle), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_nle_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpnle_ss(self.0, other.0) })
   }
 
   /// lanewise `!(self < other)`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_nlt(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpnlt_ps(self.0, other.0) })
   }
 
   /// as [cmp_nlt](m128::cmp_nlt), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_nlt_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpnlt_ss(self.0, other.0) })
   }
 
   /// lanewise `self != NaN && other != NaN`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_nonnan(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpord_ps(self.0, other.0) })
   }
 
   /// as [cmp_nonnan](m128::cmp_nonnan), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_nonnan_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpord_ss(self.0, other.0) })
   }
 
   /// lanewise `self == NaN || other == NaN`, 0 for `false`, all bits for `true`.
+  #[inline(always)]
   pub fn cmp_nan(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpunord_ps(self.0, other.0) })
   }
 
   /// as [cmp_nan](m128::cmp_nan), lowest lane only, other lanes copy `self`.
+  #[inline(always)]
   pub fn cmp_nan_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_cmpunord_ss(self.0, other.0) })
   }
   
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
+  #[inline(always)]
   pub fn comi_eq_single(self, other: m128) -> i32 {
     unsafe { _mm_comieq_ss(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self>=other`, 0 for `false`, 1 for `true`.
+  #[inline(always)]
   pub fn comi_ge_single(self, other: m128) -> i32 {
     unsafe { _mm_comige_ss(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self>other`, 0 for `false`, 1 for `true`.
+  #[inline(always)]
   pub fn comi_gt_single(self, other: m128) -> i32 {
     unsafe { _mm_comigt_ss(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self<=other`, 0 for `false`, 1 for `true`.
+  #[inline(always)]
   pub fn comi_le_single(self, other: m128) -> i32 {
     unsafe { _mm_comile_ss(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self<other`, 0 for `false`, 1 for `true`.
+  #[inline(always)]
   pub fn comi_lt_single(self, other: m128) -> i32 {
     unsafe { _mm_comilt_ss(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self!=other`, 0 for `false`, 1 for `true`.
+  #[inline(always)]
   pub fn comi_neq_single(self, other: m128) -> i32 {
     unsafe { _mm_comineq_ss(self.0, other.0) }
   }
   
   /// Converts the `i32` into the lowest lane, other lanes copy `self`.
+  #[inline(always)]
   pub fn cvt_i32f32_single(self, b: i32) -> m128 {
     m128(unsafe { _mm_cvt_si2ss(self.0, b) })
   }
 
   /// Converts the `i64` into the lowest lane, other lanes copy `self`.
+  #[inline(always)]
   #[cfg(target_arch = "x86_64")]
   pub fn cvt_i64f32_single(self, b: i64) -> m128 {
     m128(unsafe { _mm_cvtsi64_ss(self.0, b) })
   }
 
   /// Round (by mode) the lowest lane to `i32` and returns it.
+  #[inline(always)]
   pub fn cvt_f32i32_single(self) -> i32 {
     unsafe { _mm_cvt_ss2si(self.0) }
   }
 
   /// Round (by mode) the lowest lane to `i64` and returns it.
+  #[inline(always)]
   #[cfg(target_arch = "x86_64")]
   pub fn cvt_f32i64_single(self) -> i64 {
     unsafe { _mm_cvtss_si64(self.0) }
   }
 
   /// Truncate the lowest lane to `i32` and returns it.
+  #[inline(always)]
   pub fn cvt_f32i32_single_trunc(self) -> i32 {
     unsafe { _mm_cvttss_si32(self.0) }
   }
 
   /// Truncate the lowest lane to `i64` and returns it.
   #[cfg(target_arch = "x86_64")]
+  #[inline(always)]
   pub fn cvt_f32i64_single_trunc(self) -> i64 {
     unsafe { _mm_cvttss_si64(self.0) }
   }
 
   /// Extracts the lowest lane as an `f32`.
+  #[inline(always)]
   pub fn cvt_f32_single(self) -> f32 {
     unsafe { _mm_cvtss_f32(self.0) }
   }
 
-  /// f32x4 lanewise maximum of `self` and `other`
+  /// f32x4 lanewise maximum of `self` and `other`.
+  #[inline(always)]
   pub fn max(self, other: m128) -> m128 {
     m128(unsafe { _mm_max_ps(self.0, other.0) })
   }
 
-  /// f32x4 lanewise minimum of `self` and `other`
+  /// f32x4 lanewise minimum of `self` and `other`.
+  #[inline(always)]
   pub fn min(self, other: m128) -> m128 {
     m128(unsafe { _mm_min_ps(self.0, other.0) })
   }
 
   /// low lane is max of `self` and `other`, other lanes are `self`.
+  #[inline(always)]
   pub fn max_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_max_ss(self.0, other.0) })
   }
 
   /// low lane is min of `self` and `other`, other lanes are `self`.
+  #[inline(always)]
   pub fn min_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_min_ss(self.0, other.0) })
   }
 
   /// output uses the low lane of `other` and the rest are `self`.
+  #[inline(always)]
   pub fn move_single(self, other: m128) -> m128 {
     m128(unsafe { _mm_move_ss(self.0, other.0) })
   }
@@ -671,6 +740,7 @@ impl m128 {
   /// -------------------
   /// out:   [a, b, e, f]
   /// ```
+  #[inline(always)]
   pub fn move_high_low(self, other: m128) -> m128 {
     m128(unsafe { _mm_movehl_ps(self.0, other.0) })
   }
@@ -685,12 +755,14 @@ impl m128 {
   /// -------------------
   /// out:   [g, h, c, d]
   /// ```
+  #[inline(always)]
   pub fn move_low_high(self, other: m128) -> m128 {
     m128(unsafe { _mm_movelh_ps(self.0, other.0) })
   }
 
   /// Sets bits 0 through 3 of the output based on the most significant bits of
   /// lanes 0 through 3.
+  #[inline(always)]
   pub fn move_mask(self) -> i32 {
     unsafe { _mm_movemask_ps(self.0) }
   }
@@ -698,6 +770,7 @@ impl m128 {
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
   ///
   /// "Won't signal an exception for QNaNs."
+  #[inline(always)]
   pub fn ucomi_eq_single(self, other: m128) -> i32 {
     unsafe { _mm_ucomieq_ss(self.0, other.0) }
   }
@@ -705,6 +778,7 @@ impl m128 {
   /// Compares lowest lane, `self>=other`, 0 for `false`, 1 for `true`.
   ///
   /// "Won't signal an exception for QNaNs."
+  #[inline(always)]
   pub fn ucomi_ge_single(self, other: m128) -> i32 {
     unsafe { _mm_ucomige_ss(self.0, other.0) }
   }
@@ -712,6 +786,7 @@ impl m128 {
   /// Compares lowest lane, `self>other`, 0 for `false`, 1 for `true`.
   ///
   /// "Won't signal an exception for QNaNs."
+  #[inline(always)]
   pub fn ucomi_gt_single(self, other: m128) -> i32 {
     unsafe { _mm_ucomigt_ss(self.0, other.0) }
   }
@@ -719,6 +794,7 @@ impl m128 {
   /// Compares lowest lane, `self<=other`, 0 for `false`, 1 for `true`.
   ///
   /// "Won't signal an exception for QNaNs."
+  #[inline(always)]
   pub fn ucomi_le_single(self, other: m128) -> i32 {
     unsafe { _mm_ucomile_ss(self.0, other.0) }
   }
@@ -726,6 +802,7 @@ impl m128 {
   /// Compares lowest lane, `self<other`, 0 for `false`, 1 for `true`.
   ///
   /// "Won't signal an exception for QNaNs."
+  #[inline(always)]
   pub fn ucomi_lt_single(self, other: m128) -> i32 {
     unsafe { _mm_ucomilt_ss(self.0, other.0) }
   }
@@ -733,6 +810,7 @@ impl m128 {
   /// Compares lowest lane, `self!=other`, 0 for `false`, 1 for `true`.
   ///
   /// "Won't signal an exception for QNaNs."
+  #[inline(always)]
   pub fn ucomi_neq_single(self, other: m128) -> i32 {
     unsafe { _mm_ucomineq_ss(self.0, other.0) }
   }
@@ -746,6 +824,7 @@ impl m128 {
   /// -------------------
   /// out:   [e, a, f, b]
   /// ```
+  #[inline(always)]
   pub fn unpack_high(self, other: m128) -> m128 {
     m128(unsafe { _mm_unpackhi_ps(self.0, other.0) })
   }
@@ -759,6 +838,7 @@ impl m128 {
   /// -------------------
   /// out:   [g, c, h, d]
   /// ```
+  #[inline(always)]
   pub fn unpack_low(self, other: m128) -> m128 {
     m128(unsafe { _mm_unpacklo_ps(self.0, other.0) })
   }
