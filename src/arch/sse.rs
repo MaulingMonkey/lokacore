@@ -63,12 +63,14 @@ impl m128 {
   }
 
   /// Loads the `f32` referenced into all lanes.
+  #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
   pub fn load_all(f: &f32) -> Self {
     m128(unsafe { _mm_load1_ps(f) })
   }
 
   /// Loads the `f32` referenced into the lowest lane, others are 0.
+  #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
   pub fn load_single(f: &f32) -> Self {
     m128(unsafe { _mm_load_ss(f) })

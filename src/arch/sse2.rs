@@ -58,10 +58,11 @@ impl m128i {
     m128i(unsafe { _mm_set_epi32(e3, e2, e1, e0) })
   }
 
-  /// Store the data in a `&mut u128`.
+  /// Store the data as a single `u128`, and you can re-interpret that however
+  /// you like.
   #[inline(always)]
-  pub fn store(self, addr: &mut u128) {
-    let p = addr as *mut u128 as *mut __m128i;
+  pub fn store(self, addr: &mut Align16<u128>) {
+    let p = addr as *mut Align16<u128> as *mut __m128i;
     debug_assert!(p as usize % 16 == 0);
     unsafe { _mm_store_si128(p, self.0) };
   }
@@ -69,8 +70,8 @@ impl m128i {
   /// As [store](m128i::store), but returns a new `u128` for you.
   #[inline(always)]
   pub fn to_u128(self) -> u128 {
-    let mut u = 0u128;
+    let mut u = Align16(0u128);
     self.store(&mut u);
-    u
+    u.0
   }
 }
