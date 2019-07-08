@@ -44,7 +44,7 @@ impl core::fmt::Debug for m128 {
 
 #[test]
 #[cfg(target_feature = "sse")]
-fn test_debug() {
+fn test_m128_debug() {
   extern crate std;
   let m = m128::set(5.0, 6.0, 7.0, 8.5);
   assert_eq!(&std::format!("{:?}", m), "m128(5, 6, 7, 8.5)");
@@ -61,9 +61,18 @@ pub struct m128i(pub __m128i);
 impl core::fmt::Debug for m128i {
   /// Formats in set/store order: high index lane to low index lane.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    let a = self.to_array();
-    write!(f, "m128i({}, {}, {}, {})", a[3], a[2], a[1], a[0])
+    let u = self.to_u128();
+    write!(f, "m128i({})", u)
   }
+}
+
+#[test]
+#[cfg(target_feature = "sse")]
+fn test_m128i_debug() {
+  extern crate std;
+  let m = m128i::set_i32(-1, 0, 1, 15);
+  let expected = (-1i32 as u32 as u128) << 96 | 1 << 32 | 15;
+  assert_eq!(&std::format!("{:?}", m), &std::format!("m128i({})", expected));
 }
 
 /// A 128-bit SIMD register, `f64x2`
@@ -80,4 +89,12 @@ impl core::fmt::Debug for m128d {
     let a = self.to_array();
     write!(f, "m128d({}, {})", a[1], a[0])
   }
+}
+
+#[test]
+#[cfg(target_feature = "sse")]
+fn test_m128d_debug() {
+  extern crate std;
+  let m = m128d::set(5.0, 6.5);
+  assert_eq!(&std::format!("{:?}", m), "m128d(5, 6.5)");
 }
