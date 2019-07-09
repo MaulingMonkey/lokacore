@@ -106,15 +106,17 @@ impl m128d {
   }
 
   /// Convert the low lane `f64` value into `i64`
+  #[cfg(target_arch = "x86_64")]
   #[inline(always)]
   pub fn convert_i64_single(self) -> i64 {
-    unsafe { _mm_cvtsd_si64 (self.0) }
+    unsafe { _mm_cvtsd_si64(self.0) }
   }
 
   /// Truncates the low `f64` values into `i64` and return it.
+  #[cfg(target_arch = "x86_64")]
   #[inline(always)]
   pub fn truncate_i64_single(self) -> i64 {
-    unsafe { _mm_cvttsd_si64  (self.0) }
+    unsafe { _mm_cvttsd_si64(self.0) }
   }
 }
 
@@ -666,7 +668,7 @@ impl m128i {
   /// Store the low `i64` lane to the address provided.
   #[inline(always)]
   pub fn store_low_i64(self, addr: &mut m128i) {
-    unsafe { _mm_storel_epi64 (&mut addr.0, self.0) }
+    unsafe { _mm_storel_epi64(&mut addr.0, self.0) }
   }
 
   /// lanewise i64x2 subtraction
@@ -685,7 +687,7 @@ impl m128i {
   /// ```
   #[inline(always)]
   pub fn unpack_high_i64(self, other: m128i) -> m128i {
-    m128i(unsafe { _mm_unpackhi_epi64 (self.0, other.0) })
+    m128i(unsafe { _mm_unpackhi_epi64(self.0, other.0) })
   }
 
   /// Unpack and interleave the low `i64` values of `self` and `other`.
@@ -702,6 +704,7 @@ impl m128i {
   }
 
   /// Extract the low `i64` lane
+  #[cfg(target_arch = "x86_64")]
   #[inline(always)]
   pub fn extract_lowest_i64(self) -> i64 {
     unsafe { _mm_cvtsi128_si64(self.0) }
@@ -727,7 +730,8 @@ pub fn store_nontemporal_i32(addr: &mut i32, val: i32) {
 }
 
 /// Store the value using a non-temporal hint.
+#[cfg(target_arch = "x86_64")]
 #[inline(always)]
 pub fn store_nontemporal_i64(addr: &mut i64, val: i64) {
-  unsafe { _mm_stream_si64 (addr, val) };
+  unsafe { _mm_stream_si64(addr, val) };
 }
