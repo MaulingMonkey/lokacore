@@ -26,7 +26,7 @@ pub fn rdtsc() -> u64 {
   unsafe { _rdtsc() }
 }
 
-/// A 128-bit SIMD register, `f32x4`
+/// A 128-bit SIMD register, always used as `f32x4`
 #[derive(Clone, Copy)]
 #[cfg_attr(not(target_feature = "sse"), derive(Debug))]
 #[allow(bad_style)]
@@ -50,7 +50,7 @@ fn test_m128_debug() {
   assert_eq!(&std::format!("{:?}", m), "m128(5, 6, 7, 8.5)");
 }
 
-/// A 128-bit SIMD register, integral data, layout based on the op.
+/// A 128-bit SIMD register, the integer lanes depend on the operation used.
 #[derive(Clone, Copy)]
 #[cfg_attr(not(target_feature = "sse2"), derive(Debug))]
 #[allow(bad_style)]
@@ -72,10 +72,13 @@ fn test_m128i_debug() {
   extern crate std;
   let m = m128i::set_i32(-1, 0, 1, 15);
   let expected = (-1i32 as u32 as u128) << 96 | 1 << 32 | 15;
-  assert_eq!(&std::format!("{:?}", m), &std::format!("m128i({})", expected));
+  assert_eq!(
+    &std::format!("{:?}", m),
+    &std::format!("m128i({})", expected)
+  );
 }
 
-/// A 128-bit SIMD register, `f64x2`
+/// A 128-bit SIMD register, always used as `f64x2`
 #[derive(Clone, Copy)]
 #[cfg_attr(not(target_feature = "sse2"), derive(Debug))]
 #[allow(bad_style)]
