@@ -117,15 +117,6 @@ impl m128 {
     unsafe { _mm_store_ss(addr, self.0) };
   }
 
-  /// Store the lanes into the slots of the array with a non-temporal memory
-  /// hint. Lowest lane to lowest index, and so on.
-  #[inline(always)]
-  pub fn store_nontemporal(self, addr: &mut Align16<[f32; 4]>) {
-    let p = addr as *mut Align16<[f32; 4]> as *mut f32;
-    debug_assert!(p as usize % 16 == 0);
-    unsafe { _mm_stream_ps(p, self.0) };
-  }
-
   /// As [store](m128::store), but makes a new array and returns it for you.
   #[inline(always)]
   pub fn to_array(self) -> [f32; 4] {

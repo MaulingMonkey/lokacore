@@ -61,7 +61,7 @@ pub struct m128i(pub __m128i);
 impl core::fmt::Debug for m128i {
   /// Formats in set/store order: high index lane to low index lane.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    let u = self.to_u128();
+    let u = self.to_i128();
     write!(f, "m128i({})", u)
   }
 }
@@ -71,7 +71,7 @@ impl core::fmt::Debug for m128i {
 fn test_m128i_debug() {
   extern crate std;
   let m = m128i::set_i32(-1, 0, 1, 15);
-  let expected = (-1i32 as u32 as u128) << 96 | 1 << 32 | 15;
+  let expected = ((-1i32 as u32 as u128) << 96) as i128 | 1 << 32 | 15;
   assert_eq!(
     &std::format!("{:?}", m),
     &std::format!("m128i({})", expected)
