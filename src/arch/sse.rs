@@ -120,7 +120,7 @@ impl m128 {
   /// As [store](m128::store), but makes a new array and returns it for you.
   #[inline(always)]
   pub fn to_array(self) -> [f32; 4] {
-    let mut a = Align16([0.0f32; 4]);
+    let mut a = Align16([0.0_f32; 4]);
     self.store(&mut a);
     a.0
   }
@@ -926,7 +926,7 @@ pub fn set_rounding_mode(mode: u32) {
 }
 
 /// As
-/// [_mm_sfence](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html).
+/// [`_mm_sfence`](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_sfence.html).
 ///
 /// This forces all store-to-memory operations before this to be globally
 /// visible before any such operations after.

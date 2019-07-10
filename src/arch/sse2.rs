@@ -28,13 +28,6 @@ impl m128 {
     m128(unsafe { _mm_cvtsd_ss(self.0, other.0) })
   }
 
-  /// Converts the low `f64` to `f32` and stores in the lowest lane. Other lanes
-  /// zero.
-  #[inline(always)]
-  pub fn convert_single_f64(reg: m128d) -> m128 {
-    m128(unsafe { _mm_cvtpd_ps(reg.0) })
-  }
-
   /// Casts this value into an `m128d`
   #[inline(always)]
   pub fn cast_m128d(self) -> m128d {
@@ -55,6 +48,13 @@ impl m128d {
   #[inline(always)]
   pub fn convert_i32(self) -> m128i {
     m128i(unsafe { _mm_cvtpd_epi32(self.0) })
+  }
+
+  /// Converts the low `f64` to `f32` and stores in the lowest lane. Other lanes
+  /// zero.
+  #[inline(always)]
+  pub fn convert_single_f64(self) -> m128 {
+    m128(unsafe { _mm_cvtpd_ps(self.0) })
   }
 
   /// Convert the low lane `f64` value into `i32`
@@ -307,7 +307,7 @@ impl m128d {
   /// As [store](m128d::store), but makes a new array and returns it for you.
   #[inline(always)]
   pub fn to_array(self) -> [f64; 2] {
-    let mut a = Align16([0.0f64; 2]);
+    let mut a = Align16([0.0_f64; 2]);
     self.store(&mut a);
     a.0
   }
@@ -1363,7 +1363,7 @@ impl m128i {
   /// As [store](m128i::store), but returns a new `i128` for you.
   #[inline(always)]
   pub fn to_i128(self) -> i128 {
-    let mut u = Align16(0i128);
+    let mut u = Align16(0_i128);
     self.store(&mut u);
     u.0
   }
