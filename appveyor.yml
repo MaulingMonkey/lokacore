@@ -23,17 +23,8 @@ environment:
       target: x86_64-pc-windows-msvc
     - channel: 1.36.0
       target: x86_64-pc-windows-gnu
-    # Beta
-    - channel: beta
-      target: i686-pc-windows-msvc
-    - channel: beta
-      target: i686-pc-windows-gnu
-    - channel: beta
-      target: x86_64-pc-windows-msvc
-    - channel: beta
-      target: x86_64-pc-windows-gnu
-    # Nightly is checked only by TravisCI since I honestly don't know how to get
-    # this thing to allow for failures with nightly builds.
+    # Beta and Nightly are checked by TravisCI since builds there run in
+    # parallel.
 
 install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
