@@ -1,6 +1,52 @@
 
 use super::*;
 
+/// A 128-bit SIMD register, the integer lanes depend on the operation used.
+#[derive(Clone, Copy)]
+#[allow(bad_style)]
+#[repr(transparent)]
+pub struct m128i(pub __m128i);
+
+impl core::fmt::Debug for m128i {
+  /// Formats in set/store order: high index lane to low index lane.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let u = self.to_i128();
+    write!(f, "m128i({})", u)
+  }
+}
+
+#[test]
+fn test_m128i_debug() {
+  extern crate std;
+  let m = m128i::set_i32(-1, 0, 1, 15);
+  let expected = ((-1i32 as u32 as u128) << 96) as i128 | 1 << 32 | 15;
+  assert_eq!(
+    &std::format!("{:?}", m),
+    &std::format!("m128i({})", expected)
+  );
+}
+
+/// A 128-bit SIMD register, always used as `f64x2`
+#[derive(Clone, Copy)]
+#[allow(bad_style)]
+#[repr(transparent)]
+pub struct m128d(pub __m128d);
+
+impl core::fmt::Debug for m128d {
+  /// Formats in set/store order: high index lane to low index lane.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let a = self.to_array();
+    write!(f, "m128d({}, {})", a[1], a[0])
+  }
+}
+
+#[test]
+fn test_m128d_debug() {
+  extern crate std;
+  let m = m128d::set(5.0, 6.5);
+  assert_eq!(&std::format!("{:?}", m), "m128d(5, 6.5)");
+}
+
 /// # SSE2 Operations
 impl m128 {
   /// lanewise convert the `f32` values into `i32`.

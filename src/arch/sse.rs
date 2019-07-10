@@ -2,12 +2,10 @@ use super::*;
 
 /// A 128-bit SIMD register. Always used as `f32x4`
 #[derive(Clone, Copy)]
-#[cfg_attr(not(target_feature = "sse"), derive(Debug))]
 #[allow(bad_style)]
 #[repr(transparent)]
 pub struct m128(pub __m128);
 
-#[cfg(target_feature = "sse")]
 impl core::fmt::Debug for m128 {
   /// Formats in set/store order: high index lane to low index lane.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -17,7 +15,6 @@ impl core::fmt::Debug for m128 {
 }
 
 #[test]
-#[cfg(target_feature = "sse")]
 fn test_m128_debug() {
   extern crate std;
   let m = m128::set(5.0, 6.0, 7.0, 8.5);
