@@ -1,5 +1,29 @@
 use super::*;
 
+/// A 128-bit SIMD register. Always used as `f32x4`
+#[derive(Clone, Copy)]
+#[cfg_attr(not(target_feature = "sse"), derive(Debug))]
+#[allow(bad_style)]
+#[repr(transparent)]
+pub struct m128(pub __m128);
+
+#[cfg(target_feature = "sse")]
+impl core::fmt::Debug for m128 {
+  /// Formats in set/store order: high index lane to low index lane.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let a = self.to_array();
+    write!(f, "m128({}, {}, {}, {})", a[3], a[2], a[1], a[0])
+  }
+}
+
+#[test]
+#[cfg(target_feature = "sse")]
+fn test_m128_debug() {
+  extern crate std;
+  let m = m128::set(5.0, 6.0, 7.0, 8.5);
+  assert_eq!(&std::format!("{:?}", m), "m128(5, 6, 7, 8.5)");
+}
+
 /// # SSE Operations
 impl m128 {
   /// Sets the floats into a register, high to low. The first argument is the
