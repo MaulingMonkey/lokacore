@@ -1310,6 +1310,7 @@ impl m128i {
   }
 
   /// Sets the `i64` as the lowest lane, other lanes 0
+  #[cfg(target_arch="x86_64")]
   #[inline(always)]
   pub fn set_single_i64(val: i64) -> Self {
     m128i(unsafe { _mm_cvtsi64_si128(val) })
