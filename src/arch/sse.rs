@@ -1,104 +1,231 @@
 use super::*;
+use core::ops::*;
 
-/// A 128-bit SIMD register. Always used as `f32x4`
+/// A 128-bit SIMD value. Always used as `f32x4`.
+///
+/// * The convention for SIMD data is that, similar to a `u128` or `i128`, the
+///   0th bit is on the far right, and bits count up as you move left.
+/// * This type always treats the bits as if they were four `f32` values in a
+///   row. Each `f32` is a "lane". Just like with bit numbering, the 0th lane is
+///   on the right and lane index values go up as you move left. This is the
+///   opposite of how you're usually told to think about arrayed data, but
+///   that's just the convention.
+/// * There's both unary and binary "lanewise" operations, which cause each lane
+///   to do the operation on its own.
+/// * There's also operations with a `_low` suffix, which use only the 0th lane.
+///   The other lanes are either copied forward from `self` (methods) or set to
+///   `0.0` (constructor functions).
+/// * There's "rounding" operations, which work according to the current
+///   thread's rounding mode. See [set_rounding_mode].
 #[derive(Clone, Copy)]
 #[allow(bad_style)]
 #[repr(transparent)]
 pub struct m128(pub __m128);
 
 impl core::fmt::Debug for m128 {
-  /// Formats in set/store order: high index lane to low index lane.
+  /// Formats in set/store order.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let a = self.to_array();
     write!(f, "m128({}, {}, {}, {})", a[3], a[2], a[1], a[0])
   }
 }
 
-#[test]
-fn test_m128_debug() {
-  extern crate std;
-  let m = m128::set(5.0, 6.0, 7.0, 8.5);
-  assert_eq!(&std::format!("{:?}", m), "m128(5, 6, 7, 8.5)");
+impl Add for m128 {
+  type Output = Self;
+  /// f32x4 lanewise addition
+  #[inline(always)]
+  fn add(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_add_ps(self.0, rhs.0) })
+  }
+}
+
+impl Div for m128 {
+  type Output = Self;
+  /// f32x4 lanewise division
+  #[inline(always)]
+  fn div(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_div_ps(self.0, rhs.0) })
+  }
+}
+
+impl Mul for m128 {
+  type Output = Self;
+  /// f32x4 lanewise multiplication
+  #[inline(always)]
+  fn mul(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_mul_ps(self.0, rhs.0) })
+  }
+}
+
+impl Sub for m128 {
+  type Output = Self;
+  /// f32x4 lanewise subtraction
+  #[inline(always)]
+  fn sub(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_sub_ps(self.0, rhs.0) })
+  }
+}
+
+impl Neg for m128 {
+  type Output = Self;
+  /// lanewise unary negation
+  #[inline(always)]
+  fn neg(self) -> Self {
+    m128(unsafe { _mm_sub_ps(_mm_setzero_ps(), self.0) })
+  }
+}
+
+impl AddAssign for m128 {
+  /// f32x4 lanewise addition then assignment
+  #[inline(always)]
+  fn add_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_add_ps(self.0, rhs.0) };
+  }
+}
+
+impl DivAssign for m128 {
+  /// f32x4 lanewise division then assignment
+  #[inline(always)]
+  fn div_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_div_ps(self.0, rhs.0) };
+  }
+}
+
+impl MulAssign for m128 {
+  /// f32x4 lanewise multiplication then assignment
+  #[inline(always)]
+  fn mul_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_mul_ps(self.0, rhs.0) };
+  }
+}
+
+impl SubAssign for m128 {
+  /// f32x4 lanewise subtraction then assignment
+  #[inline(always)]
+  fn sub_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_sub_ps(self.0, rhs.0) };
+  }
+}
+
+impl BitAnd for m128 {
+  type Output = Self;
+  /// bitwise `&`
+  #[inline(always)]
+  fn bitand(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_and_ps(self.0, rhs.0) })
+  }
+}
+
+impl BitOr for m128 {
+  type Output = Self;
+  /// bitwise `|`
+  #[inline(always)]
+  fn bitor(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_or_ps(self.0, rhs.0) })
+  }
+}
+
+impl BitXor for m128 {
+  type Output = Self;
+  /// bitwise `XOR`
+  #[inline(always)]
+  fn bitxor(self, rhs: Self) -> Self {
+    m128(unsafe { _mm_xor_ps(self.0, rhs.0) })
+  }
+}
+
+impl BitAndAssign for m128 {
+  /// bitwise `&` then assignment
+  #[inline(always)]
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_and_ps(self.0, rhs.0) };
+  }
+}
+
+impl BitOrAssign for m128 {
+  /// bitwise `|` then assignment
+  #[inline(always)]
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_or_ps(self.0, rhs.0) };
+  }
+}
+
+impl BitXorAssign for m128 {
+  /// bitwise `XOR` then assignment
+  #[inline(always)]
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_xor_ps(self.0, rhs.0) };
+  }
 }
 
 /// # SSE Operations
 impl m128 {
-  /// Sets the floats into a register, high to low. The first argument is the
-  /// "highest" lane index (bits 96..=127), and arguments after that proceed
-  /// down from there.
+  /// Sets the `f32` values into lanes from high to low.
   #[inline(always)]
   pub fn set(e3: f32, e2: f32, e1: f32, e0: f32) -> Self {
     m128(unsafe { _mm_set_ps(e3, e2, e1, e0) })
   }
 
-  /// Sets the floats into a register, low to high. The first argument is the
-  /// "lowest" lane index (bits 0..=31), and arguments after that proceed up
-  /// from there.
+  /// Sets the `f32` values into lanes with reverse order, from to low high.
   #[inline(always)]
-  pub fn setr(e3: f32, e2: f32, e1: f32, e0: f32) -> Self {
-    m128(unsafe { _mm_setr_ps(e3, e2, e1, e0) })
+  pub fn set_reverse(e0: f32, e1: f32, e2: f32, e3: f32) -> Self {
+    m128(unsafe { _mm_setr_ps(e0, e1, e2, e3) })
   }
 
-  /// Sets the given value as all lanes in the register.
+  /// Sets the `f32` as the value for all lanes.
   #[inline(always)]
-  pub fn set_all(f: f32) -> Self {
+  pub fn splat(f: f32) -> Self {
     m128(unsafe { _mm_set1_ps(f) })
   }
 
-  /// Sets the given value as the lowest lane, other lanes zero.
+  /// Sets the `f32` as the low lane, other lanes zero.
   #[inline(always)]
-  pub fn set_single(f: f32) -> Self {
+  pub fn set_low(f: f32) -> Self {
     m128(unsafe { _mm_set_ss(f) })
   }
 
-  /// Returns a register with all lanes zero.
+  /// Returns a value with all lanes zero.
   #[inline(always)]
   pub fn zeroed() -> Self {
     m128(unsafe { _mm_setzero_ps() })
   }
-  /// Loads an array of 16-byte aligned `f32` values, with each index matching
-  /// each lane.
+
+  /// Loads the `f32`s in so that the index matches the lane.
   #[inline(always)]
-  pub fn load(arr: &Align16<[f32; 4]>) -> Self {
-    // TODO: TEST THAT INDEX 0 GOES INTO LANE 0.
-    let p = arr as *const Align16<[f32; 4]> as *const f32;
-    debug_assert!(p as usize % 16 == 0);
+  pub fn load(addr: &Align16<[f32; 4]>) -> Self {
+    let p = addr as *const Align16<[f32; 4]> as *const f32;
     m128(unsafe { _mm_load_ps(p) })
   }
 
-  /// Loads an array of 16-byte aligned `f32` values, with reverse ordering.
+  /// Loads the `f32`s reversed, index opposite of lane.
   #[inline(always)]
-  pub fn loadr(arr: &Align16<[f32; 4]>) -> Self {
-    // TODO: TEST THAT INDEX 3 GOES INTO LANE 0.
-    let p = arr as *const Align16<[f32; 4]> as *const f32;
-    debug_assert!(p as usize % 16 == 0);
+  pub fn load_reverse(addr: &Align16<[f32; 4]>) -> Self {
+    let p = addr as *const Align16<[f32; 4]> as *const f32;
     m128(unsafe { _mm_loadr_ps(p) })
   }
 
-  /// Loads an array of `f32` values, without any required alignment.
+  /// As [load](m128::load), but no alignment requirement.
   #[inline(always)]
-  pub fn loadu(arr: &[f32; 4]) -> Self {
-    let p = arr as *const [f32; 4] as *const f32;
-    debug_assert!(p as usize % 16 == 0);
-    m128(unsafe { _mm_loadr_ps(p) })
+  pub fn load_unaligned(addr: &[f32; 4]) -> Self {
+    let p = addr as *const [f32; 4] as *const f32;
+    m128(unsafe { _mm_loadu_ps(p) })
   }
 
   /// Loads the `f32` referenced into all lanes.
   #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
-  pub fn load_all(f: &f32) -> Self {
-    m128(unsafe { _mm_load1_ps(f) })
+  pub fn load_splat(addr: &f32) -> Self {
+    m128(unsafe { _mm_load1_ps(addr) })
   }
 
   /// Loads the `f32` referenced into the lowest lane, others are 0.
   #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
-  pub fn load_single(f: &f32) -> Self {
-    m128(unsafe { _mm_load_ss(f) })
+  pub fn load_low(addr: &f32) -> Self {
+    m128(unsafe { _mm_load_ss(addr) })
   }
 
-  /// Store the lanes into the slots of the array. Lowest lane to lowest index,
-  /// and so on.
+  /// Stores the `f32`s in so that the index matches the lane.
   #[inline(always)]
   pub fn store(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
@@ -106,19 +233,17 @@ impl m128 {
     unsafe { _mm_store_ps(p, self.0) };
   }
 
-  /// Store the lanes into the slots of the array. Highest lane to lowest index,
-  /// and so on.
+  /// Stores the `f32`s reversed, index opposite of lane.
   #[inline(always)]
-  pub fn storer(self, addr: &mut Align16<[f32; 4]>) {
+  pub fn store_reverse(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
     debug_assert!(p as usize % 16 == 0);
     unsafe { _mm_storer_ps(p, self.0) };
   }
 
-  /// Store the lanes into the slots of the array. Lowest lane to lowest index,
-  /// and so on.
+  /// As [store](m128::store), but no alignment requirement.
   #[inline(always)]
-  pub fn storeu(self, addr: &mut [f32; 4]) {
+  pub fn store_unaligned(self, addr: &mut [f32; 4]) {
     let p = addr as *mut [f32; 4] as *mut f32;
     debug_assert!(p as usize % 16 == 0);
     unsafe { _mm_storeu_ps(p, self.0) };
@@ -126,7 +251,7 @@ impl m128 {
 
   /// Store the lowest lane to all slots in the array.
   #[inline(always)]
-  pub fn store_all(self, addr: &mut Align16<[f32; 4]>) {
+  pub fn store_splat(self, addr: &mut Align16<[f32; 4]>) {
     let p = addr as *mut Align16<[f32; 4]> as *mut f32;
     debug_assert!(p as usize % 16 == 0);
     unsafe { _mm_store1_ps(p, self.0) };
@@ -134,7 +259,7 @@ impl m128 {
 
   /// Store the lowest lane to the address.
   #[inline(always)]
-  pub fn store_single(self, addr: &mut f32) {
+  pub fn store_low(self, addr: &mut f32) {
     unsafe { _mm_store_ss(addr, self.0) };
   }
 
@@ -588,134 +713,6 @@ impl m128 {
   }
 }
 
-impl core::ops::Add for m128 {
-  type Output = Self;
-  /// f32x4 lanewise addition
-  #[inline(always)]
-  fn add(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_add_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::Div for m128 {
-  type Output = Self;
-  /// f32x4 lanewise division
-  #[inline(always)]
-  fn div(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_div_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::Mul for m128 {
-  type Output = Self;
-  /// f32x4 lanewise multiplication
-  #[inline(always)]
-  fn mul(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_mul_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::Sub for m128 {
-  type Output = Self;
-  /// f32x4 lanewise subtraction
-  #[inline(always)]
-  fn sub(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_sub_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::AddAssign for m128 {
-  /// f32x4 lanewise addition then assignment
-  #[inline(always)]
-  fn add_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_add_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::DivAssign for m128 {
-  /// f32x4 lanewise division then assignment
-  #[inline(always)]
-  fn div_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_div_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::MulAssign for m128 {
-  /// f32x4 lanewise multiplication then assignment
-  #[inline(always)]
-  fn mul_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_mul_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::SubAssign for m128 {
-  /// f32x4 lanewise subtraction then assignment
-  #[inline(always)]
-  fn sub_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_sub_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::BitAnd for m128 {
-  type Output = Self;
-  /// bitwise `&`
-  #[inline(always)]
-  fn bitand(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_and_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::BitOr for m128 {
-  type Output = Self;
-  /// bitwise `|`
-  #[inline(always)]
-  fn bitor(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_or_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::BitXor for m128 {
-  type Output = Self;
-  /// bitwise `XOR`
-  #[inline(always)]
-  fn bitxor(self, rhs: Self) -> Self {
-    m128(unsafe { _mm_xor_ps(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::BitAndAssign for m128 {
-  /// bitwise `&` then assignment
-  #[inline(always)]
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_and_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::BitOrAssign for m128 {
-  /// bitwise `|` then assignment
-  #[inline(always)]
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_or_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::BitXorAssign for m128 {
-  /// bitwise `XOR` then assignment
-  #[inline(always)]
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_xor_ps(self.0, rhs.0) };
-  }
-}
-
-impl core::ops::Neg for m128 {
-  type Output = Self;
-  /// lanewise unary negation
-  #[inline(always)]
-  fn neg(self) -> Self {
-    m128(unsafe { _mm_sub_ps(_mm_setzero_ps(), self.0) })
-  }
-}
-
 /// Shuffles `a` and `b` into an output according to the indexes given.
 ///
 /// * The two low lanes come from `a`
@@ -765,19 +762,6 @@ macro_rules! shuffle128 {
       compile_error!("the shuffle macro requires 'sse' to be enabled.");
     }
   }};
-}
-
-#[test]
-fn test_shuffle() {
-  let a = m128::set(9.0, 8.0, 7.0, 6.0);
-
-  let output = shuffle128!(a, a, 0, 0, 0, 0);
-  let expected = m128::set_all(6.0);
-  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
-
-  let output = shuffle128!(a, a, 0, 0, 0, 1);
-  let expected = m128::set(6.0, 6.0, 6.0, 7.0);
-  assert_eq!(0b1111, expected.cmp_eq(output).move_mask());
 }
 
 /// Treats the inputs as rows of a 4x4 matrix and transposes the matrix.
