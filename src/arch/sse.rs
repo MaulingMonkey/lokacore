@@ -6,9 +6,9 @@ use core::ops::*;
 /// * The convention for SIMD data is that, similar to a `u128` or `i128`, the
 ///   0th bit is on the far right, and bits count up as you move left.
 /// * This type always treats the bits as if they were four `f32` values in a
-///   row. Each `f32` is a "lane". Just like with bit numbering, the 0th lane is
-///   on the right and lane index values go up as you move left. This is the
-///   opposite of how you're usually told to think about arrayed data, but
+///   row. Each `f32` is a "lane". Just like with bit numbering, the 0th (low)
+///   lane is on the right and lane index values go up as you move left. This is
+///   the opposite of how you're usually told to think about arrayed data, but
 ///   that's just the convention.
 /// * There's both unary and binary "lanewise" operations, which cause each lane
 ///   to do the operation on its own.
@@ -68,7 +68,7 @@ impl Sub for m128 {
 
 impl Neg for m128 {
   type Output = Self;
-  /// lanewise unary negation
+  /// lanewise unary negation (`0.0 - self`)
   #[inline(always)]
   fn neg(self) -> Self {
     m128(unsafe { _mm_sub_ps(_mm_setzero_ps(), self.0) })

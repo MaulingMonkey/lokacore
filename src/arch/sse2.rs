@@ -1,4 +1,5 @@
 use super::*;
+use core::ops::*;
 
 /// # SSE2 Operations
 impl m128 {
@@ -40,7 +41,23 @@ impl m128 {
   }
 }
 
-/// A 128-bit SIMD register, the integer lanes depend on the operation used.
+/// A 128-bit SIMD value. Holds integral data of an undefined layout.
+///
+/// * The convention for SIMD data is that, similar to a `u128` or `i128`, the
+///   0th bit is on the far right, and bits count up as you move left.
+/// * This type has "lanes" of data, and as with bit numbering the 0th (low)
+///   lane is on the right and the lane index goes up as you move to the left.
+///   The exact size of a lane depends on the operation in question. Generally
+///   operations are for signed integers of various sizes, but there's a few
+///   unsigned operations as well.
+/// * There's both unary and binary "lanewise" operations, which cause each lane
+///   to do the operation on its own.
+/// * There's also operations with a `_low` suffix, which use only the 0th lane
+///   (according to that operation's layout usage). The other lane is either
+///   copied forward from `self` (methods) or set to `0` (constructor
+///   functions).
+/// * There's "rounding" operations, which work according to the current
+///   thread's rounding mode. See [set_rounding_mode].
 #[derive(Clone, Copy)]
 #[allow(bad_style)]
 #[repr(transparent)]
@@ -54,40 +71,40 @@ impl core::fmt::Debug for m128i {
   }
 }
 
-impl core::ops::BitAnd for m128i {
+impl BitAnd for m128i {
   type Output = Self;
   fn bitand(self, rhs: Self) -> Self {
     m128i(unsafe { _mm_and_si128(self.0, rhs.0) })
   }
 }
 
-impl core::ops::BitAndAssign for m128i {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_and_si128(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::BitOr for m128i {
+impl BitOr for m128i {
   type Output = Self;
   fn bitor(self, rhs: Self) -> Self {
     m128i(unsafe { _mm_or_si128(self.0, rhs.0) })
   }
 }
 
-impl core::ops::BitOrAssign for m128i {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_or_si128(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::BitXor for m128i {
+impl BitXor for m128i {
   type Output = Self;
   fn bitxor(self, rhs: Self) -> Self {
     m128i(unsafe { _mm_xor_si128(self.0, rhs.0) })
   }
 }
 
-impl core::ops::BitXorAssign for m128i {
+impl BitAndAssign for m128i {
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_and_si128(self.0, rhs.0) }
+  }
+}
+
+impl BitOrAssign for m128i {
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_or_si128(self.0, rhs.0) }
+  }
+}
+
+impl BitXorAssign for m128i {
   fn bitxor_assign(&mut self, rhs: Self) {
     self.0 = unsafe { _mm_xor_si128(self.0, rhs.0) }
   }
@@ -799,7 +816,22 @@ impl m128i {
   }
 }
 
-/// A 128-bit SIMD register, always used as `f64x2`
+/// A 128-bit SIMD value. Always used as `f64x2`.
+///
+/// * The convention for SIMD data is that, similar to a `u128` or `i128`, the
+///   0th bit is on the far right, and bits count up as you move left.
+/// * This type always treats the bits as if they were two `f64` values in a
+///   row. Each `f64` is a "lane". Just like with bit numbering, the 0th (low)
+///   lane is on the right and 1st (high) lane is to the left. This is the
+///   opposite of how you're usually told to think about arrayed data, but
+///   that's just the convention.
+/// * There's both unary and binary "lanewise" operations, which cause each lane
+///   to do the operation on its own.
+/// * There's also operations with a `_low` suffix, which use only the 0th lane.
+///   The other lane is either copied forward from `self` (methods) or set to
+///   `0.0` (constructor functions).
+/// * There's "rounding" operations, which work according to the current
+///   thread's rounding mode. See [set_rounding_mode].
 #[derive(Clone, Copy)]
 #[allow(bad_style)]
 #[repr(transparent)]
@@ -813,94 +845,103 @@ impl core::fmt::Debug for m128d {
   }
 }
 
-impl core::ops::Add for m128d {
+impl Add for m128d {
   type Output = Self;
   fn add(self, rhs: Self) -> Self {
     m128d(unsafe { _mm_add_pd(self.0, rhs.0) })
   }
 }
 
-impl core::ops::AddAssign for m128d {
-  fn add_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_add_pd(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::BitAnd for m128d {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    m128d(unsafe { _mm_and_pd(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::BitAndAssign for m128d {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_and_pd(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::Div for m128d {
+impl Div for m128d {
   type Output = Self;
   fn div(self, rhs: Self) -> Self {
     m128d(unsafe { _mm_div_pd(self.0, rhs.0) })
   }
 }
 
-impl core::ops::DivAssign for m128d {
-  fn div_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_div_pd(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::Mul for m128d {
+impl Mul for m128d {
   type Output = Self;
   fn mul(self, rhs: Self) -> Self {
     m128d(unsafe { _mm_mul_pd(self.0, rhs.0) })
   }
 }
 
-impl core::ops::MulAssign for m128d {
-  fn mul_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_mul_pd(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::BitOr for m128d {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    m128d(unsafe { _mm_or_pd(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::BitOrAssign for m128d {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_or_pd(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::BitXor for m128d {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self {
-    m128d(unsafe { _mm_xor_pd(self.0, rhs.0) })
-  }
-}
-
-impl core::ops::BitXorAssign for m128d {
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 = unsafe { _mm_xor_pd(self.0, rhs.0) }
-  }
-}
-
-impl core::ops::Sub for m128d {
+impl Sub for m128d {
   type Output = Self;
   fn sub(self, rhs: Self) -> Self {
     m128d(unsafe { _mm_sub_pd(self.0, rhs.0) })
   }
 }
 
-impl core::ops::SubAssign for m128d {
+impl Neg for m128d {
+  type Output = Self;
+  /// lanewise unary negation (`0.0 - self`)
+  #[inline(always)]
+  fn neg(self) -> Self {
+    m128d(unsafe { _mm_sub_pd(_mm_setzero_pd(), self.0) })
+  }
+}
+
+impl AddAssign for m128d {
+  fn add_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_add_pd(self.0, rhs.0) }
+  }
+}
+
+impl DivAssign for m128d {
+  fn div_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_div_pd(self.0, rhs.0) }
+  }
+}
+
+impl MulAssign for m128d {
+  fn mul_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_mul_pd(self.0, rhs.0) }
+  }
+}
+
+impl SubAssign for m128d {
   fn sub_assign(&mut self, rhs: Self) {
     self.0 = unsafe { _mm_sub_pd(self.0, rhs.0) }
+  }
+}
+
+impl BitAnd for m128d {
+  type Output = Self;
+  fn bitand(self, rhs: Self) -> Self {
+    m128d(unsafe { _mm_and_pd(self.0, rhs.0) })
+  }
+}
+
+impl BitOr for m128d {
+  type Output = Self;
+  fn bitor(self, rhs: Self) -> Self {
+    m128d(unsafe { _mm_or_pd(self.0, rhs.0) })
+  }
+}
+
+impl BitXor for m128d {
+  type Output = Self;
+  fn bitxor(self, rhs: Self) -> Self {
+    m128d(unsafe { _mm_xor_pd(self.0, rhs.0) })
+  }
+}
+
+impl BitAndAssign for m128d {
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_and_pd(self.0, rhs.0) }
+  }
+}
+
+impl BitOrAssign for m128d {
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_or_pd(self.0, rhs.0) }
+  }
+}
+
+impl BitXorAssign for m128d {
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_xor_pd(self.0, rhs.0) }
   }
 }
 
