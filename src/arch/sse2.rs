@@ -150,7 +150,7 @@ impl m128i {
 
   /// Sets the value as all `i8` lanes
   #[inline(always)]
-  pub fn set_all_i8(val: i8) -> Self {
+  pub fn splat_i8(val: i8) -> Self {
     m128i(unsafe { _mm_set1_epi8(val) })
   }
 
@@ -396,7 +396,7 @@ impl m128i {
 
   /// Sets the value as all `i16` lanes
   #[inline(always)]
-  pub fn set_all_i16(val: i16) -> Self {
+  pub fn splat_i16(val: i16) -> Self {
     m128i(unsafe { _mm_set1_epi16(val) })
   }
 
@@ -546,7 +546,7 @@ impl m128i {
 
   /// Sets the `i32` value to all `i32` lanes.
   #[inline(always)]
-  pub fn set_all_i32(val: i32) -> Self {
+  pub fn splat_i32(val: i32) -> Self {
     m128i(unsafe { _mm_set1_epi32(val) })
   }
 
@@ -706,7 +706,7 @@ impl m128i {
 
   /// Sets the `i64` value to both `i64` lanes.
   #[inline(always)]
-  pub fn set_all_i64(val: i64) -> Self {
+  pub fn splat_i64(val: i64) -> Self {
     m128i(unsafe { _mm_set1_epi64x(val) })
   }
 
@@ -1124,7 +1124,7 @@ impl m128d {
 
   /// Loads the `f64` values, low index to high index.
   #[inline(always)]
-  pub fn loadr(arr: &Align16<[f64; 2]>) -> m128d {
+  pub fn load_reverse(arr: &Align16<[f64; 2]>) -> m128d {
     // TODO: TEST THAT INDEX 0 GOES INTO LANE 0.
     let p = arr as *const Align16<[f64; 2]> as *const f64;
     debug_assert!(p as usize % 16 == 0);
@@ -1133,7 +1133,7 @@ impl m128d {
 
   /// Loads the `f64` values, high index to low index.
   #[inline(always)]
-  pub fn loadu(arr: &[f64; 2]) -> m128d {
+  pub fn load_unaligned(arr: &[f64; 2]) -> m128d {
     // TODO: TEST THAT INDEX 0 GOES INTO LANE 0.
     let p = arr as *const [f64; 2] as *const f64;
     debug_assert!(p as usize % 16 == 0);
@@ -1160,7 +1160,7 @@ impl m128d {
 
   /// Loads the `f64` into both lanes.
   #[inline(always)]
-  pub fn set_all(f: f64) -> m128d {
+  pub fn splat(f: f64) -> m128d {
     m128d(unsafe { _mm_set1_pd(f) })
   }
 
