@@ -1,4 +1,3 @@
-
 use super::*;
 
 /// Implements an unsafe marker trait on an array type if the element type
@@ -68,6 +67,11 @@ unsafe impl<T> Zeroable for *mut T {}
 unsafe impl<T> Zeroable for *const T {}
 unsafe impl<T> Zeroable for Option<NonNull<T>> {}
 unsafe impl<T> Zeroable for PhantomData<T> where T: Zeroable {}
+unsafe impl<T> Zeroable for Align2<T> where T: Zeroable {}
+unsafe impl<T> Zeroable for Align4<T> where T: Zeroable {}
+unsafe impl<T> Zeroable for Align8<T> where T: Zeroable {}
+unsafe impl<T> Zeroable for Align16<T> where T: Zeroable {}
+unsafe impl<T> Zeroable for Align32<T> where T: Zeroable {}
 impl_unsafe_marker_for_array!(
   Zeroable, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
   24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024
@@ -121,6 +125,48 @@ unsafe impl<T> Pod for *mut T {}
 unsafe impl<T> Pod for *const T {}
 unsafe impl<T> Pod for Option<NonNull<T>> {}
 unsafe impl<T> Pod for PhantomData<T> where T: Pod {}
+//
+unsafe impl Pod for Align2<[u8; 2]> {}
+unsafe impl Pod for Align2<[i8; 2]> {}
+//
+unsafe impl Pod for Align4<[u8; 4]> {}
+unsafe impl Pod for Align4<[i8; 4]> {}
+unsafe impl Pod for Align4<[u16; 2]> {}
+unsafe impl Pod for Align4<[i16; 2]> {}
+//
+unsafe impl Pod for Align8<[u8; 8]> {}
+unsafe impl Pod for Align8<[i8; 8]> {}
+unsafe impl Pod for Align8<[u16; 4]> {}
+unsafe impl Pod for Align8<[i16; 4]> {}
+unsafe impl Pod for Align8<[u32; 2]> {}
+unsafe impl Pod for Align8<[i32; 2]> {}
+unsafe impl Pod for Align8<[f32; 2]> {}
+//
+unsafe impl Pod for Align16<[u8; 16]> {}
+unsafe impl Pod for Align16<[i8; 16]> {}
+unsafe impl Pod for Align16<[u16; 8]> {}
+unsafe impl Pod for Align16<[i16; 8]> {}
+unsafe impl Pod for Align16<[u32; 4]> {}
+unsafe impl Pod for Align16<[i32; 4]> {}
+unsafe impl Pod for Align16<[f32; 4]> {}
+unsafe impl Pod for Align16<[u64; 2]> {}
+unsafe impl Pod for Align16<[i64; 2]> {}
+unsafe impl Pod for Align16<[f64; 2]> {}
+unsafe impl Pod for Align16<u128> {}
+unsafe impl Pod for Align16<i128> {}
+//
+unsafe impl Pod for Align32<[u8; 32]> {}
+unsafe impl Pod for Align32<[i8; 32]> {}
+unsafe impl Pod for Align32<[u16; 16]> {}
+unsafe impl Pod for Align32<[i16; 16]> {}
+unsafe impl Pod for Align32<[u32; 8]> {}
+unsafe impl Pod for Align32<[i32; 8]> {}
+unsafe impl Pod for Align32<[f32; 8]> {}
+unsafe impl Pod for Align32<[u64; 4]> {}
+unsafe impl Pod for Align32<[i64; 4]> {}
+unsafe impl Pod for Align32<[f64; 4]> {}
+unsafe impl Pod for Align32<[u128; 2]> {}
+unsafe impl Pod for Align32<[i128; 2]> {}
 impl_unsafe_marker_for_array!(
   Pod, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
   25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024
