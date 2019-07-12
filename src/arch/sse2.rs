@@ -3,9 +3,9 @@ use core::ops::*;
 
 /// # SSE2 Operations
 impl m128 {
-  /// lanewise convert the `f32` values into `i32`.
+  /// lanewise round the `f32` values into `i32`.
   #[inline(always)]
-  pub fn convert_i32(self) -> m128i {
+  pub fn round_i32(self) -> m128i {
     m128i(unsafe { _mm_cvtps_epi32(self.0) })
   }
 
@@ -15,28 +15,28 @@ impl m128 {
     m128i(unsafe { _mm_cvttps_epi32(self.0) })
   }
 
-  /// Casts this value into an `m128i`
+  /// Transmute this value into an `m128i` without affecting bits.
   #[inline(always)]
-  pub fn cast_to_m128i(self) -> m128i {
+  pub fn transmute_m128i(self) -> m128i {
     m128i(unsafe { _mm_castps_si128(self.0) })
   }
 
   /// Converts the low `f64` to `f32` and replaces the lowest lane (other lanes
   /// are unchanged).
   #[inline(always)]
-  pub fn convert_replace_low_f64(self, other: m128d) -> m128 {
+  pub fn round_replace_low_f64(self, other: m128d) -> m128 {
     m128(unsafe { _mm_cvtsd_ss(self.0, other.0) })
   }
 
-  /// Casts this value into an `m128d`
+  /// Transmute this value into an `m128d` without affecting bits.
   #[inline(always)]
-  pub fn cast_m128d(self) -> m128d {
+  pub fn transmute_m128d(self) -> m128d {
     m128d(unsafe { _mm_castps_pd(self.0) })
   }
 
-  /// Convert the lower `f32` lanes to `f64` values.
+  /// Convert the lower two `f32` lanes to `f64` values.
   #[inline(always)]
-  pub fn convert_low_f32_f64(self) -> m128d {
+  pub fn round_lower_f64(self) -> m128d {
     m128d(unsafe { _mm_cvtps_pd(self.0) })
   }
 }
@@ -47,9 +47,9 @@ impl m128 {
 ///   0th bit is on the far right, and bits count up as you move left.
 /// * This type has "lanes" of data, and as with bit numbering the 0th (low)
 ///   lane is on the right and the lane index goes up as you move to the left.
-///   The exact size of a lane depends on the operation in question. Generally
-///   operations are for signed integers of various sizes, but there's a few
-///   unsigned operations as well.
+///   The exact size of a lane depends on the operation in question. Operations
+///   are for signed integers of various sizes, but there's a few unsigned
+///   operations as well.
 /// * There's both unary and binary "lanewise" operations, which cause each lane
 ///   to do the operation on its own.
 /// * There's also operations with a `_low` suffix, which use only the 0th lane
@@ -728,14 +728,14 @@ impl m128i {
 
   /// Sets the `i32` as the lowest lane, other lanes 0
   #[inline(always)]
-  pub fn set_single_i32(val: i32) -> Self {
+  pub fn set_low_i32(val: i32) -> Self {
     m128i(unsafe { _mm_cvtsi32_si128(val) })
   }
 
   /// Sets the `i64` as the lowest lane, other lanes 0
   #[cfg(target_arch = "x86_64")]
   #[inline(always)]
-  pub fn set_single_i64(val: i64) -> Self {
+  pub fn set_low_i64(val: i64) -> Self {
     m128i(unsafe { _mm_cvtsi64_si128(val) })
   }
 
@@ -749,7 +749,7 @@ impl m128i {
 
   /// Loads the integer data from the address given.
   #[inline(always)]
-  pub fn loadu(addr: &Align16<i128>) -> Self {
+  pub fn load_unaligned(addr: &Align16<i128>) -> Self {
     let p = addr as *const Align16<i128> as *const __m128i;
     debug_assert!(p as usize % 16 == 0);
     m128i(unsafe { _mm_loadu_si128(p) })
@@ -791,15 +791,15 @@ impl m128i {
     u.0
   }
 
-  /// Convert each `i32` lane into an `f32` lane.
+  /// Round each `i32` lane into an `f32` lane.
   #[inline(always)]
-  pub fn convert_f32s(self) -> m128 {
+  pub fn round_i32(self) -> m128 {
     m128(unsafe { _mm_cvtepi32_ps(self.0) })
   }
 
-  /// Cast directly to `m128`
+  /// Transmute this value into an `m128` without affecting bits.
   #[inline(always)]
-  pub fn cast_m128(self) -> m128 {
+  pub fn transmute_m128(self) -> m128 {
     m128(unsafe { _mm_castsi128_ps(self.0) })
   }
 
@@ -809,9 +809,9 @@ impl m128i {
     m128d(unsafe { _mm_castsi128_pd(self.0) })
   }
 
-  /// Convert the lower `i32` lanes to `f64` values.
+  /// Round the lower `i32` lanes to `f64` values.
   #[inline(always)]
-  pub fn convert_low_i32_f64(self) -> m128d {
+  pub fn round_lower_i32_f64(self) -> m128d {
     m128d(unsafe { _mm_cvtepi32_pd(self.0) })
   }
 }
@@ -947,23 +947,23 @@ impl BitXorAssign for m128d {
 
 /// # SSE2 Operations
 impl m128d {
-  /// Convert the `f64` values into `i32`, then place into the two lower `i32`
+  /// Round the `f64` values into `i32`, then place into the two lower `i32`
   /// lanes of an `m128i` (the other lanes are zero).
   #[inline(always)]
-  pub fn convert_i32(self) -> m128i {
+  pub fn round_i32(self) -> m128i {
     m128i(unsafe { _mm_cvtpd_epi32(self.0) })
   }
 
-  /// Converts the low `f64` to `f32` and stores in the lowest lane. Other lanes
-  /// zero.
+  /// Round the low `f64` to `f32` and stores in the lowest output lane.
+  /// Other lanes zero.
   #[inline(always)]
-  pub fn convert_single_f64(self) -> m128 {
+  pub fn round_low_f64(self) -> m128 {
     m128(unsafe { _mm_cvtpd_ps(self.0) })
   }
 
-  /// Convert the low lane `f64` value into `i32`
+  /// Round the low lane `f64` value into `i32` and return.
   #[inline(always)]
-  pub fn convert_i32_single(self) -> i32 {
+  pub fn extract_low_i32(self) -> i32 {
     unsafe { _mm_cvtsd_si32(self.0) }
   }
 
@@ -976,21 +976,21 @@ impl m128d {
 
   /// Truncates the low `f64` values into `i32` and return it.
   #[inline(always)]
-  pub fn truncate_i32_single(self) -> i32 {
+  pub fn truncate_i32_low(self) -> i32 {
     unsafe { _mm_cvttsd_si32(self.0) }
   }
 
-  /// Convert the low lane `f64` value into `i64`
+  /// Round the low `f64` into `i64` and return.
   #[cfg(target_arch = "x86_64")]
   #[inline(always)]
-  pub fn convert_i64_single(self) -> i64 {
+  pub fn extract_i64(self) -> i64 {
     unsafe { _mm_cvtsd_si64(self.0) }
   }
 
   /// Truncates the low `f64` values into `i64` and return it.
   #[cfg(target_arch = "x86_64")]
   #[inline(always)]
-  pub fn truncate_i64_single(self) -> i64 {
+  pub fn truncate_i64_low(self) -> i64 {
     unsafe { _mm_cvttsd_si64(self.0) }
   }
 
@@ -1118,7 +1118,7 @@ impl m128d {
   /// Overwrite the lower lane with the new value.
   #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
-  pub fn load_low(self, new: &f64) -> m128d {
+  pub fn load_replace_low(self, new: &f64) -> m128d {
     m128d(unsafe { _mm_loadl_pd(self.0, new) })
   }
 
@@ -1273,229 +1273,223 @@ impl m128d {
 
   /// Add the lower lanes, upper lane copies `self`.
   #[inline(always)]
-  pub fn add_single(self, other: m128d) -> m128d {
+  pub fn add_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_add_sd(self.0, other.0) })
   }
 
   /// Low lane is `self==other`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_eq_single(self, other: m128d) -> m128d {
+  pub fn cmp_eq_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpeq_sd(self.0, other.0) })
   }
 
   /// Low lane is `self>=other`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_ge_single(self, other: m128d) -> m128d {
+  pub fn cmp_ge_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpge_sd(self.0, other.0) })
   }
 
   /// Low lane is `self>other`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_gt_single(self, other: m128d) -> m128d {
+  pub fn cmp_gt_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpgt_sd(self.0, other.0) })
   }
 
   /// Low lane is `self<=other`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_le_single(self, other: m128d) -> m128d {
+  pub fn cmp_le_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmple_sd(self.0, other.0) })
   }
 
   /// Low lane is `self<other`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_lt_single(self, other: m128d) -> m128d {
+  pub fn cmp_lt_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmplt_sd(self.0, other.0) })
   }
 
   /// Low lane is `self!=other`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_neq_single(self, other: m128d) -> m128d {
+  pub fn cmp_neq_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpneq_sd(self.0, other.0) })
   }
 
   /// Low lane is `!(self>=other)`, high lane copies `self`.
   ///
-  /// Also this intrinsic triggers a _single_ 3rd Impact.
+  /// Also this intrinsic triggers a _low_ 3rd Impact.
   #[inline(always)]
-  pub fn cmp_nge_single(self, other: m128d) -> m128d {
+  pub fn cmp_nge_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpnge_sd(self.0, other.0) })
   }
 
   /// Low lane is `!(self>other)`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_ngt_single(self, other: m128d) -> m128d {
+  pub fn cmp_ngt_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpngt_sd(self.0, other.0) })
   }
 
   /// Low lane is `!(self<=other)`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_nle_single(self, other: m128d) -> m128d {
+  pub fn cmp_nle_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpnle_sd(self.0, other.0) })
   }
 
   /// Low lane is `!(self<other)`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_nlt_single(self, other: m128d) -> m128d {
+  pub fn cmp_nlt_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpnlt_sd(self.0, other.0) })
   }
 
   /// Low lane is `self!=NaN && other!=NaN`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_nonnan_single(self, other: m128d) -> m128d {
+  pub fn cmp_nonnan_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpord_sd(self.0, other.0) })
   }
 
   /// Low lane is `self==NaN && other==NaN`, high lane copies `self`.
   #[inline(always)]
-  pub fn cmp_nan_single(self, other: m128d) -> m128d {
+  pub fn cmp_nan_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_cmpunord_sd(self.0, other.0) })
   }
 
   /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
-  pub fn comi_eq_single(self, other: m128d) -> i32 {
+  pub fn comi_eq_low(self, other: m128d) -> i32 {
     unsafe { _mm_comieq_sd(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self>=other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
-  pub fn comi_ge_single(self, other: m128d) -> i32 {
+  pub fn comi_ge_low(self, other: m128d) -> i32 {
     unsafe { _mm_comige_sd(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self>other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
-  pub fn comi_gt_single(self, other: m128d) -> i32 {
+  pub fn comi_gt_low(self, other: m128d) -> i32 {
     unsafe { _mm_comigt_sd(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self<=other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
-  pub fn comi_le_single(self, other: m128d) -> i32 {
+  pub fn comi_le_low(self, other: m128d) -> i32 {
     unsafe { _mm_comile_sd(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self<other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
-  pub fn comi_lt_single(self, other: m128d) -> i32 {
+  pub fn comi_lt_low(self, other: m128d) -> i32 {
     unsafe { _mm_comilt_sd(self.0, other.0) }
   }
 
   /// Compares lowest lane, `self!=other`, 0 for `false`, 1 for `true`.
   #[inline(always)]
-  pub fn comi_neq_single(self, other: m128d) -> i32 {
+  pub fn comi_neq_low(self, other: m128d) -> i32 {
     unsafe { _mm_comineq_sd(self.0, other.0) }
   }
 
-  /// Convert the `i32` given to `f64` and replace the low lane with that value.
+  /// Round the `i32` given to `f64` and replace the low lane with that value.
   #[inline(always)]
-  pub fn convert_low_i32(self, val: i32) -> m128d {
+  pub fn round_replace_low_i32(self, val: i32) -> m128d {
     m128d(unsafe { _mm_cvtsi32_sd(self.0, val) })
   }
 
-  /// Convert the `i64` given to `f64` and replace the low lane with that value.
+  /// Round the `i64` given to `f64` and replace the low lane with that value.
   #[cfg(target_arch = "x86_64")]
   #[inline(always)]
-  pub fn convert_low_i64(self, val: i64) -> m128d {
+  pub fn round_replace_low_i64(self, val: i64) -> m128d {
     m128d(unsafe { _mm_cvtsi64_sd(self.0, val) })
   }
 
-  /// Convert the `f32` of the low lane in `other` to `f64` and replace the low
+  /// Round the `f32` of the low lane in `other` to `f64` and replace the low
   /// lane in `self` with that value.
   #[inline(always)]
-  pub fn convert_low_f32(self, other: m128) -> m128d {
+  pub fn round_replace_low_f64(self, other: m128) -> m128d {
     m128d(unsafe { _mm_cvtss_sd(self.0, other.0) })
   }
 
   /// Load the `f64` at the address specified into the low lane.
   #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
-  pub fn load_single(addr: &f64) -> m128d {
+  pub fn load_low(addr: &f64) -> m128d {
     m128d(unsafe { _mm_load_sd(addr) })
   }
 
   /// low lane maximum, high lane copies `self`.
   #[inline(always)]
-  pub fn max_single(self, other: m128d) -> m128d {
+  pub fn max_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_max_sd(self.0, other.0) })
   }
 
   /// low lane minimum, high lane copies `self`.
   #[inline(always)]
-  pub fn min_single(self, other: m128d) -> m128d {
+  pub fn min_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_min_sd(self.0, other.0) })
   }
 
   /// high lane is `self` high, low lane is `other` low.
   #[inline(always)]
-  pub fn move_single(self, other: m128d) -> m128d {
+  pub fn move_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_move_sd(self.0, other.0) })
   }
 
   /// Sets the `f64` into the low lane (upper lane zero).
   #[inline(always)]
-  pub fn set_single(f: f64) -> m128d {
+  pub fn set_low(f: f64) -> m128d {
     m128d(unsafe { _mm_set_sd(f) })
   }
 
   /// Square root of the low lane of `other`, high lane is the same as high
   /// `self`.
   #[inline(always)]
-  pub fn sqrt_single(self, other: m128d) -> m128d {
+  pub fn sqrt_low(self, other: m128d) -> m128d {
     m128d(unsafe { _mm_sqrt_sd(self.0, other.0) })
   }
 
-  /// Store the low `f64` at the address specified.
-  #[inline(always)]
-  pub fn store_single(self, addr: &mut f64) {
-    unsafe { _mm_store_sd(addr, self.0) };
-  }
-
-  /// Compares lowest lane, `self==other`, 0 for `false`, 1 for `true`.
+  /// Compare low with int output (0==`false`, 1==`true`): `self == other`
   ///
-  /// "Won't signal an exception for QNaNs."
+  /// Won't signal an exception for QNaNs.
   #[inline(always)]
-  pub fn ucomi_eq_single(self, other: m128d) -> i32 {
+  pub fn ucmp_int_eq_low(self, other: m128d) -> i32 {
     unsafe { _mm_ucomieq_sd(self.0, other.0) }
   }
 
-  /// Compares lowest lane, `self>=other`, 0 for `false`, 1 for `true`.
+  /// Compare low with int output (0==`false`, 1==`true`): `self >= other`
   ///
-  /// "Won't signal an exception for QNaNs."
+  /// Won't signal an exception for QNaNs.
   #[inline(always)]
-  pub fn ucomi_ge_single(self, other: m128d) -> i32 {
+  pub fn ucmp_int_ge_low(self, other: m128d) -> i32 {
     unsafe { _mm_ucomige_sd(self.0, other.0) }
   }
 
-  /// Compares lowest lane, `self>other`, 0 for `false`, 1 for `true`.
+  /// Compare low with int output (0==`false`, 1==`true`): `self > other`
   ///
-  /// "Won't signal an exception for QNaNs."
+  /// Won't signal an exception for QNaNs.
   #[inline(always)]
-  pub fn ucomi_gt_single(self, other: m128d) -> i32 {
+  pub fn ucmp_int_gt_low(self, other: m128d) -> i32 {
     unsafe { _mm_ucomigt_sd(self.0, other.0) }
   }
 
-  /// Compares lowest lane, `self<=other`, 0 for `false`, 1 for `true`.
+  /// Compare low with int output (0==`false`, 1==`true`): `self <= other`
   ///
-  /// "Won't signal an exception for QNaNs."
+  /// Won't signal an exception for QNaNs.
   #[inline(always)]
-  pub fn ucomi_le_single(self, other: m128d) -> i32 {
+  pub fn ucmp_int_le_low(self, other: m128d) -> i32 {
     unsafe { _mm_ucomile_sd(self.0, other.0) }
   }
 
-  /// Compares lowest lane, `self<other`, 0 for `false`, 1 for `true`.
+  /// Compare low with int output (0==`false`, 1==`true`): `self < other`
   ///
-  /// "Won't signal an exception for QNaNs."
+  /// Won't signal an exception for QNaNs.
   #[inline(always)]
-  pub fn ucomi_lt_single(self, other: m128d) -> i32 {
+  pub fn ucmp_int_lt_low(self, other: m128d) -> i32 {
     unsafe { _mm_ucomilt_sd(self.0, other.0) }
   }
 
-  /// Compares lowest lane, `self!=other`, 0 for `false`, 1 for `true`.
+  /// Compare low with int output (0==`false`, 1==`true`): `self != other`
   ///
-  /// "Won't signal an exception for QNaNs."
+  /// Won't signal an exception for QNaNs.
   #[inline(always)]
-  pub fn ucomi_neq_single(self, other: m128d) -> i32 {
+  pub fn ucmp_int_neq_low(self, other: m128d) -> i32 {
     unsafe { _mm_ucomineq_sd(self.0, other.0) }
   }
 }
