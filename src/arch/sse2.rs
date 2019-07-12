@@ -1,3 +1,4 @@
+#![allow(clippy::use_self)]
 use super::*;
 use core::ops::*;
 
@@ -57,7 +58,7 @@ impl m128 {
 ///   copied forward from `self` (methods) or set to `0` (constructor
 ///   functions).
 /// * There's "rounding" operations, which work according to the current
-///   thread's rounding mode. See [set_rounding_mode].
+///   thread's rounding mode. See [`set_rounding_mode`].
 #[derive(Clone, Copy)]
 #[allow(bad_style)]
 #[repr(transparent)]
@@ -831,7 +832,7 @@ impl m128i {
 ///   The other lane is either copied forward from `self` (methods) or set to
 ///   `0.0` (constructor functions).
 /// * There's "rounding" operations, which work according to the current
-///   thread's rounding mode. See [set_rounding_mode].
+///   thread's rounding mode. See [`set_rounding_mode`].
 #[derive(Clone, Copy)]
 #[allow(bad_style)]
 #[repr(transparent)]
