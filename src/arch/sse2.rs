@@ -1077,7 +1077,7 @@ impl m128d {
   /// Overwrite the lower lane with the new value.
   #[allow(clippy::trivially_copy_pass_by_ref)]
   #[inline(always)]
-  pub fn load_load(self, new: &f64) -> m128d {
+  pub fn load_low(self, new: &f64) -> m128d {
     m128d(unsafe { _mm_loadl_pd(self.0, new) })
   }
 
