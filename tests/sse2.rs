@@ -9,7 +9,7 @@ use lokacore::arch::x86_64::*;
 #[test]
 fn m128i_debug() {
   let m = m128i::set_i32(-1, 0, 1, 15);
-  let expected = ((-1i32 as u32 as u128) << 96) as i128 | 1 << 32 | 15;
+  let expected = (u128::from(-1i32 as u32) << 96) as i128 | 1 << 32 | 15;
   assert_eq!(&format!("{:?}", m), &format!("m128i({})", expected));
 }
 

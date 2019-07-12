@@ -748,12 +748,11 @@ impl m128i {
     m128i(unsafe { _mm_load_si128(p) })
   }
 
-  /// Loads the integer data from the address given.
+  /// Loads the integer data from the address given without alignment requirement.
   #[inline(always)]
-  pub fn load_unaligned(addr: &Align16<i128>) -> Self {
-    let p = addr as *const Align16<i128> as *const __m128i;
-    debug_assert!(p as usize % 16 == 0);
-    m128i(unsafe { _mm_loadu_si128(p) })
+  pub fn load_unaligned(addr: *const i128) -> Self {
+    #[allow(clippy::cast_ptr_alignment)]
+    m128i(unsafe { _mm_loadu_si128(addr as *const _) })
   }
 
   /// Creates a zeroed value.
