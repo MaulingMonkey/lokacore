@@ -35,7 +35,7 @@ macro_rules! branchless_max {
   };
 }
 
-/// Wrapper inner value to a minimum of 2.
+/// Wrap the inner value to a minimum of 2.
 ///
 /// This is for alignment shenanigans, you're not expected to use it in a
 /// struct, more just in function arguments and such.
@@ -43,7 +43,7 @@ macro_rules! branchless_max {
 #[repr(align(2))]
 pub struct Align2<T>(pub T);
 
-/// Wrapper inner value to a minimum of 4.
+/// Wrap the inner value to a minimum of 4.
 ///
 /// This is for alignment shenanigans, you're not expected to use it in a
 /// struct, more just in function arguments and such.
@@ -51,7 +51,7 @@ pub struct Align2<T>(pub T);
 #[repr(align(4))]
 pub struct Align4<T>(pub T);
 
-/// Wrapper inner value to a minimum of 8.
+/// Wrap the inner value to a minimum of 8.
 ///
 /// This is for alignment shenanigans, you're not expected to use it in a
 /// struct, more just in function arguments and such.
@@ -59,7 +59,7 @@ pub struct Align4<T>(pub T);
 #[repr(align(8))]
 pub struct Align8<T>(pub T);
 
-/// Wrapper inner value to a minimum of 16.
+/// Wrap the inner value to a minimum of 16.
 ///
 /// This is for alignment shenanigans, you're not expected to use it in a
 /// struct, more just in function arguments and such.
@@ -67,7 +67,7 @@ pub struct Align8<T>(pub T);
 #[repr(align(16))]
 pub struct Align16<T>(pub T);
 
-/// Wrapper inner value to a minimum of 32.
+/// Wrap the inner value to a minimum of 32.
 ///
 /// This is for alignment shenanigans, you're not expected to use it in a
 /// struct, more just in function arguments and such.

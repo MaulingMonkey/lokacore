@@ -167,6 +167,19 @@ unsafe impl Pod for Align32<[i64; 4]> {}
 unsafe impl Pod for Align32<[f64; 4]> {}
 unsafe impl Pod for Align32<[u128; 2]> {}
 unsafe impl Pod for Align32<[i128; 2]> {}
+//
+#[cfg(target_pointer_width="32")]
+unsafe impl Pod for Align8<[usize; 2]> {}
+#[cfg(target_pointer_width="32")]
+unsafe impl Pod for Align16<[usize; 4]> {}
+#[cfg(target_pointer_width="32")]
+unsafe impl Pod for Align32<[usize; 8]> {}
+//
+#[cfg(target_pointer_width="64")]
+unsafe impl Pod for Align16<[usize; 2]> {}
+#[cfg(target_pointer_width="64")]
+unsafe impl Pod for Align32<[usize; 4]> {}
+//
 impl_unsafe_marker_for_array!(
   Pod, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
   25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024
