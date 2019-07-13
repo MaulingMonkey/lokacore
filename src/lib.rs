@@ -22,28 +22,28 @@ pub use marker::*;
 /// Branchless, so you can use it in a `const` context.
 #[macro_export]
 macro_rules! branchless_abs {
-  ($x:ident, $u:ty) => {{
+  ($x:expr, $u:ty) => {{
     let mask = $x >> ((core::mem::size_of::<$u>() * 8) - 1);
-    $x.wrapping_add(mask) ^ mask
+    ($x as $u).wrapping_add(mask) ^ mask
   }};
 }
 
 /// `branchless_min!(a, b, type)` gives the minimum of two integer values.
-/// 
+///
 /// Branchless, so you can use it in a `const` context.
 #[macro_export]
 macro_rules! branchless_min {
-  ($x:ident, $y:ident, $u:ty) => {
+  ($x:expr, $y:expr, $u:ty) => {
     $y ^ (($x ^ $y) & (($x < $y) as $u).wrapping_neg())
   };
 }
 
 /// `branchless_max!(a, b, type)` gives the maximum of two integer values.
-/// 
+///
 /// Branchless, so you can use it in a `const` context.
 #[macro_export]
 macro_rules! branchless_max {
-  ($x:ident, $y:ident, $u:ty) => {
+  ($x:expr, $y:expr, $u:ty) => {
     $x ^ (($x ^ $y) & (($x < $y) as $u).wrapping_neg())
   };
 }
@@ -119,9 +119,33 @@ pub enum PodCastError {
   /// accordingly. If the output slice wouldn't be a whole number of elements
   /// then the conversion fails.
   OutputSliceWouldHaveSlop,
-  /// When casting an individual `&T` or `&mut T` value the size must be an
-  /// exact match.
-  ReferenceSizeMismatch,
+  /// When casting an individual `T`, `&T`, or `&mut T` value the source size
+  /// and destination size must be an exact match.
+  SizeMismatch,
+}
+
+/// As [`try_cast`], but unwraps the result for you.
+pub fn cast<A: Pod, B: Pod>(a: A) -> B {
+  try_cast(a).unwrap()
+}
+
+/// Try to cast `T` into `U`.
+///
+/// ## Failure
+///
+/// * If the types don't have the same size this fails.
+pub fn try_cast<A: Pod, B: Pod>(a: A) -> Result<B, PodCastError> {
+  if size_of::<A>() == size_of::<B>() {
+    let mut b = B::zeroed();
+    // Note(Lokathor): We copy in terms of `u8` because that allows us to bypass
+    // any potential alignment difficulties.
+    let ap = &a as *const A as *const u8;
+    let bp = &mut b as *mut B as *mut u8;
+    unsafe { core::intrinsics::copy_nonoverlapping(ap, bp, size_of::<A>()) }
+    Ok(b)
+  } else {
+    Err(PodCastError::SizeMismatch)
+  }
 }
 
 /// As [`try_cast_slice`], but unwraps the result for you.
@@ -162,7 +186,7 @@ pub fn try_cast_ref<A: Pod, B: Pod>(a: &A) -> Result<&B, PodCastError> {
         .unwrap_or_else(|| core::hint::unreachable_unchecked())
     })
   } else {
-    Err(PodCastError::ReferenceSizeMismatch)
+    Err(PodCastError::SizeMismatch)
   }
 }
 
@@ -179,7 +203,7 @@ pub fn try_cast_mut<A: Pod, B: Pod>(a: &mut A) -> Result<&mut B, PodCastError> {
         .unwrap_or_else(|| core::hint::unreachable_unchecked())
     })
   } else {
-    Err(PodCastError::ReferenceSizeMismatch)
+    Err(PodCastError::SizeMismatch)
   }
 }
 

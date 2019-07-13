@@ -8,7 +8,25 @@ use lokacore::*;
 
 macro_rules! lanes_eq {
   ($a:expr, $b:expr) => {
-    assert_eq!($a.cmp_eq($b).move_mask(), 15);
+    let mut a_values = Align16([0.0; 4]);
+    let mut b_values = Align16([0.0; 4]);
+    $a.store(&mut a_values);
+    $b.store(&mut b_values);
+    let a_bits: u128 = cast(a_values);
+    let b_bits: u128 = cast(b_values);
+    assert_eq!(a_bits, b_bits, "a_bits:{:b}, b_bits:{:b}", a_bits, b_bits);
+  };
+}
+
+macro_rules! check_masks {
+  ($x:expr, [$b3:literal, $b2:literal, $b1:literal, $b0:literal]) => {
+    let f = f32::from_bits(core::u32::MAX);
+    let l3 = if $b3 { f } else { 0.0 };
+    let l2 = if $b2 { f } else { 0.0 };
+    let l1 = if $b1 { f } else { 0.0 };
+    let l0 = if $b0 { f } else { 0.0 };
+    let target = m128::set(l3, l2, l1, l0);
+    lanes_eq!($x, target);
   };
 }
 
@@ -99,7 +117,7 @@ fn m128_bitand() {
   let all = core::u32::MAX;
   let a = m128::set(f32::from_bits(all), 0.0, f32::from_bits(all), 0.0);
   let b = m128::set(0.0, f32::from_bits(all), f32::from_bits(all), 0.0);
-  assert_eq!(&format!("{:?}", a & b), "m128(0, 0, NaN, 0)");
+  check_masks!(a & b, [false, false, true, false]);
 }
 
 #[test]
@@ -107,7 +125,7 @@ fn m128_bitor() {
   let all = core::u32::MAX;
   let a = m128::set(f32::from_bits(all), 0.0, f32::from_bits(all), 0.0);
   let b = m128::set(0.0, f32::from_bits(all), f32::from_bits(all), 0.0);
-  assert_eq!(&format!("{:?}", a | b), "m128(NaN, NaN, NaN, 0)");
+  check_masks!(a | b, [true, true, true, false]);
 }
 
 #[test]
@@ -115,7 +133,7 @@ fn m128_bitxor() {
   let all = core::u32::MAX;
   let a = m128::set(f32::from_bits(all), 0.0, f32::from_bits(all), 0.0);
   let b = m128::set(0.0, f32::from_bits(all), f32::from_bits(all), 0.0);
-  assert_eq!(&format!("{:?}", a ^ b), "m128(NaN, NaN, 0, 0)");
+  check_masks!(a ^ b, [true, true, false, false]);
 }
 
 #[test]
@@ -124,7 +142,7 @@ fn m128_bitand_assign() {
   let mut a = m128::set(f32::from_bits(all), 0.0, f32::from_bits(all), 0.0);
   let b = m128::set(0.0, f32::from_bits(all), f32::from_bits(all), 0.0);
   a &= b;
-  assert_eq!(&format!("{:?}", a), "m128(0, 0, NaN, 0)");
+  check_masks!(a, [false, false, true, false]);
 }
 
 #[test]
@@ -133,7 +151,7 @@ fn m128_bitor_assign() {
   let mut a = m128::set(f32::from_bits(all), 0.0, f32::from_bits(all), 0.0);
   let b = m128::set(0.0, f32::from_bits(all), f32::from_bits(all), 0.0);
   a |= b;
-  assert_eq!(&format!("{:?}", a), "m128(NaN, NaN, NaN, 0)");
+  check_masks!(a, [true, true, true, false]);
 }
 
 #[test]
@@ -142,7 +160,7 @@ fn m128_bitxor_assign() {
   let mut a = m128::set(f32::from_bits(all), 0.0, f32::from_bits(all), 0.0);
   let b = m128::set(0.0, f32::from_bits(all), f32::from_bits(all), 0.0);
   a ^= b;
-  assert_eq!(&format!("{:?}", a), "m128(NaN, NaN, 0, 0)");
+  check_masks!(a, [true, true, false, false]);
 }
 
 #[test]
