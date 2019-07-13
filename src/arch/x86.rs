@@ -4,6 +4,20 @@ use super::*;
 
 use core::arch::x86::*;
 
+unsafe impl Zeroable for __m128i {}
+unsafe impl Zeroable for __m128 {}
+unsafe impl Zeroable for __m128d {}
+unsafe impl Zeroable for __m256i {}
+unsafe impl Zeroable for __m256 {}
+unsafe impl Zeroable for __m256d {}
+
+unsafe impl Pod for __m128i {}
+unsafe impl Pod for __m128 {}
+unsafe impl Pod for __m128d {}
+unsafe impl Pod for __m256i {}
+unsafe impl Pod for __m256 {}
+unsafe impl Pod for __m256d {}
+
 // Note(Lokathor): THE SAFETY OF THE SSE AND SSE2 MODULES DEPENDS UPON COMPILE
 // TIME FEATURE SETTINGS. THEY DO NOT PERFORM ANY RUNTIME FEATURE DETECTION. YOU
 // SHOULD NOT REMOVE THE TARGET FEATURE ATTRIBUTES FOR ANY REASON.

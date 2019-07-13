@@ -22,6 +22,9 @@ use core::ops::*;
 #[repr(transparent)]
 pub struct m128(pub __m128);
 
+unsafe impl Zeroable for m128 {}
+unsafe impl Pod for m128 {}
+
 impl core::fmt::Debug for m128 {
   /// Formats in set/store order.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {

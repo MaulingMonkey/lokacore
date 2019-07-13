@@ -6,6 +6,73 @@ use lokacore::arch::x86::*;
 use lokacore::arch::x86_64::*;
 use lokacore::*;
 
+#[test]
+#[allow(clippy::float_cmp)]
+fn sse_sanity_tests() {
+  // Note(Lokathor): Here is where many sanity checks for our assumptions of
+  // `__m128` will go.
+  #[cfg(target_arch = "x86")]
+  use core::arch::x86::*;
+  #[cfg(target_arch = "x86_64")]
+  use core::arch::x86_64::*;
+  use core::mem::*;
+  unsafe {
+    // An `__m128` is "basically" an `[f32;4]`, and if you inspect the inside
+    // with pointer math stuff you get floats at each offset that are the same
+    // as the indexes of the array you transmuted to get the `__m128`.
+    let m: __m128 = transmute([5.0_f32, 6.0, 7.0, 8.0]);
+    let m_ptr: *const f32 = &m as *const __m128 as *const f32;
+    assert_eq!(*m_ptr.offset(0), 5.0);
+    assert_eq!(*m_ptr.offset(1), 6.0);
+    assert_eq!(*m_ptr.offset(2), 7.0);
+    assert_eq!(*m_ptr.offset(3), 8.0);
+
+    // Confusingly, the `set` order places the data into the lanes _backwards_
+    // from the array index ordering.
+    let m: __m128 = _mm_set_ps(5.0, 6.0, 7.0, 8.0);
+    let m_ptr: *const f32 = &m as *const __m128 as *const f32;
+    assert_eq!(*m_ptr.offset(0), 8.0);
+    assert_eq!(*m_ptr.offset(1), 7.0);
+    assert_eq!(*m_ptr.offset(2), 6.0);
+    assert_eq!(*m_ptr.offset(3), 5.0);
+
+    // And then the `setr` order places the data into the lanes the same as the
+    // array index ordering.
+    let m: __m128 = _mm_setr_ps(5.0, 6.0, 7.0, 8.0);
+    let m_ptr: *const f32 = &m as *const __m128 as *const f32;
+    assert_eq!(*m_ptr.offset(0), 5.0);
+    assert_eq!(*m_ptr.offset(1), 6.0);
+    assert_eq!(*m_ptr.offset(2), 7.0);
+    assert_eq!(*m_ptr.offset(3), 8.0);
+
+    // The "low" lane is offset 0
+    let m: __m128 = _mm_set_ss(5.0);
+    let m_ptr: *const f32 = &m as *const __m128 as *const f32;
+    assert_eq!(*m_ptr.offset(0), 5.0);
+    assert_eq!(*m_ptr.offset(1), 0.0);
+    assert_eq!(*m_ptr.offset(2), 0.0);
+    assert_eq!(*m_ptr.offset(3), 0.0);
+    // Some operations affect only the low lane.
+    {
+      let b: __m128 = _mm_set1_ps(3.0);
+      // PACKED (adds all lanes)
+      let m_b = _mm_add_ps(m, b);
+      let m_b_ptr: *const f32 = &m_b as *const __m128 as *const f32;
+      assert_eq!(*m_b_ptr.offset(0), 8.0);
+      assert_eq!(*m_b_ptr.offset(1), 3.0);
+      assert_eq!(*m_b_ptr.offset(2), 3.0);
+      assert_eq!(*m_b_ptr.offset(3), 3.0);
+      // SINGLE (adds only offset0, other lanes copy "self", `m`)
+      let m_b = _mm_add_ss(m, b);
+      let m_b_ptr: *const f32 = &m_b as *const __m128 as *const f32;
+      assert_eq!(*m_b_ptr.offset(0), 8.0);
+      assert_eq!(*m_b_ptr.offset(1), 0.0);
+      assert_eq!(*m_b_ptr.offset(2), 0.0);
+      assert_eq!(*m_b_ptr.offset(3), 0.0);
+    }
+  }
+}
+
 macro_rules! lanes_eq {
   ($a:expr, $b:expr) => {
     let mut a_values = Align16([0.0; 4]);

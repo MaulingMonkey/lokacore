@@ -64,6 +64,9 @@ impl m128 {
 #[repr(transparent)]
 pub struct m128i(pub __m128i);
 
+unsafe impl Zeroable for m128i {}
+unsafe impl Pod for m128i {}
+
 impl core::fmt::Debug for m128i {
   /// Formats in set/store order: high index lane to low index lane.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -836,6 +839,9 @@ impl m128i {
 #[allow(bad_style)]
 #[repr(transparent)]
 pub struct m128d(pub __m128d);
+
+unsafe impl Zeroable for m128d {}
+unsafe impl Pod for m128d {}
 
 impl core::fmt::Debug for m128d {
   /// Formats in set/store order: high index lane to low index lane.
