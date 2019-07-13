@@ -15,3 +15,10 @@ fn test_branchless_min_and_max() {
     }
   }
 }
+
+#[test]
+fn test_branchless_abs() {
+  for x in core::i8::MIN..=core::i8::MAX {
+    assert_eq!(branchless_abs!(x, i8), x.wrapping_abs());
+  }
+}

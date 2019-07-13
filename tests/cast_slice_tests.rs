@@ -22,7 +22,7 @@ fn test_try_cast_slice() {
   let mis_aligned_bytes = &the_bytes[1..];
   assert_eq!(
     try_cast_slice::<u8, u32>(mis_aligned_bytes),
-    Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+    Err(PodCastError::TargetAlignmentGreaterAndInputNotAligned)
   );
 
   // by taking one byte off the end, we're aligned but would have slop bytes for u32
@@ -30,7 +30,7 @@ fn test_try_cast_slice() {
   let slop_bytes = &the_bytes[..the_bytes_len_minus1];
   assert_eq!(
     try_cast_slice::<u8, u32>(slop_bytes),
-    Err(SliceCastError::OutputSliceWouldHaveSlop)
+    Err(PodCastError::OutputSliceWouldHaveSlop)
   );
 
   // if we don't mess with it we can up-alignment cast
@@ -58,7 +58,7 @@ fn test_try_cast_slice_mut() {
   let mis_aligned_bytes = &mut the_bytes[1..];
   assert_eq!(
     try_cast_slice_mut::<u8, u32>(mis_aligned_bytes),
-    Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+    Err(PodCastError::TargetAlignmentGreaterAndInputNotAligned)
   );
 
   // by taking one byte off the end, we're aligned but would have slop bytes for u32
@@ -66,7 +66,7 @@ fn test_try_cast_slice_mut() {
   let slop_bytes = &mut the_bytes[..the_bytes_len_minus1];
   assert_eq!(
     try_cast_slice_mut::<u8, u32>(slop_bytes),
-    Err(SliceCastError::OutputSliceWouldHaveSlop)
+    Err(PodCastError::OutputSliceWouldHaveSlop)
   );
 
   // if we don't mess with it we can up-alignment cast

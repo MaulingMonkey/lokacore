@@ -15,23 +15,36 @@ pub mod arch;
 mod marker;
 pub use marker::*;
 
-/// Fiddly to use, but totally gets you the minimum without branching.
+/// `branchless_abs!(a, type)` gives the
+/// [wrapping](https://doc.rust-lang.org/std/primitive.i8.html#method.wrapping_abs)
+/// absolute value of any signed integer.
 ///
-/// Works for any integral type.
+/// Branchless, so you can use it in a `const` context.
+#[macro_export]
+macro_rules! branchless_abs {
+  ($x:ident, $u:ty) => {{
+    let mask = $x >> ((core::mem::size_of::<$u>() * 8) - 1);
+    $x.wrapping_add(mask) ^ mask
+  }};
+}
+
+/// `branchless_min!(a, b, type)` gives the minimum of two integer values.
+/// 
+/// Branchless, so you can use it in a `const` context.
 #[macro_export]
 macro_rules! branchless_min {
   ($x:ident, $y:ident, $u:ty) => {
-    $y ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
+    $y ^ (($x ^ $y) & (($x < $y) as $u).wrapping_neg())
   };
 }
 
-/// Fiddly to use, but totally gets you the maximum without branching.
-///
-/// Works for any integral type.
+/// `branchless_max!(a, b, type)` gives the maximum of two integer values.
+/// 
+/// Branchless, so you can use it in a `const` context.
 #[macro_export]
 macro_rules! branchless_max {
   ($x:ident, $y:ident, $u:ty) => {
-    $x ^ (($x ^ $y) & (<$u>::wrapping_neg(($x < $y) as $u)))
+    $x ^ (($x ^ $y) & (($x < $y) as $u).wrapping_neg())
   };
 }
 
@@ -91,9 +104,9 @@ pub fn bytes_of_mut<T: Pod>(t: &mut T) -> &mut [u8] {
   try_cast_slice_mut::<T, u8>(core::slice::from_mut(t)).unwrap_or(&mut [])
 }
 
-/// The things that can go wrong when casting a slice.
+/// The things that can go wrong when casting between [`Pod`] data forms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SliceCastError {
+pub enum PodCastError {
   /// You tried to cast a slice to an element type with a higher alignment
   /// requirement but the slice wasn't aligned.
   TargetAlignmentGreaterAndInputNotAligned,
@@ -106,19 +119,71 @@ pub enum SliceCastError {
   /// accordingly. If the output slice wouldn't be a whole number of elements
   /// then the conversion fails.
   OutputSliceWouldHaveSlop,
+  /// When casting an individual `&T` or `&mut T` value the size must be an
+  /// exact match.
+  ReferenceSizeMismatch,
 }
 
-/// As [try_cast_slice](try_cast_slice), but unwraps the result for you.
+/// As [`try_cast_slice`], but unwraps the result for you.
 pub fn cast_slice<A: Pod, B: Pod>(a: &[A]) -> &[B] {
   try_cast_slice(a).unwrap()
 }
 
-/// As [try_cast_slice_mut](try_cast_slice_mut), but unwraps the result for you.
+/// As [`try_cast_slice_mut`], but unwraps the result for you.
 pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
   try_cast_slice(a).unwrap()
 }
 
-/// Try to convert a slice of one type into another.
+/// As [`try_cast_ref`], but unwraps the result for you.
+pub fn cast_ref<A: Pod, B: Pod>(a: &A) -> &B {
+  try_cast_ref(a).unwrap()
+}
+
+/// As [`try_cast_mut`], but unwraps the result for you.
+pub fn cast_mut<A: Pod, B: Pod>(a: &mut A) -> &mut B {
+  try_cast_mut(a).unwrap()
+}
+
+/// Try to convert a `&T` into `&U`.
+///
+/// ## Failure
+///
+/// * If the reference isn't aligned in the new type
+/// * If the source type and target type aren't the same size.
+pub fn try_cast_ref<A: Pod, B: Pod>(a: &A) -> Result<&B, PodCastError> {
+  // Note(Lokathor): everything with `align_of` and `size_of` will optimize away
+  // after monomorphization.
+  if align_of::<B>() > align_of::<A>() && (a as *const A as usize) % align_of::<B>() != 0 {
+    Err(PodCastError::TargetAlignmentGreaterAndInputNotAligned)
+  } else if size_of::<B>() == size_of::<A>() {
+    Ok(unsafe {
+      (a as *const A as *const B)
+        .as_ref()
+        .unwrap_or_else(|| core::hint::unreachable_unchecked())
+    })
+  } else {
+    Err(PodCastError::ReferenceSizeMismatch)
+  }
+}
+
+/// As [`try_cast_ref`], but `mut`.
+pub fn try_cast_mut<A: Pod, B: Pod>(a: &mut A) -> Result<&mut B, PodCastError> {
+  // Note(Lokathor): everything with `align_of` and `size_of` will optimize away
+  // after monomorphization.
+  if align_of::<B>() > align_of::<A>() && (a as *mut A as usize) % align_of::<B>() != 0 {
+    Err(PodCastError::TargetAlignmentGreaterAndInputNotAligned)
+  } else if size_of::<B>() == size_of::<A>() {
+    Ok(unsafe {
+      (a as *mut A as *mut B)
+        .as_mut()
+        .unwrap_or_else(|| core::hint::unreachable_unchecked())
+    })
+  } else {
+    Err(PodCastError::ReferenceSizeMismatch)
+  }
+}
+
+/// Try to convert `&[T]` into `&[U]` (possibly with a change in length).
 ///
 /// * `input.as_ptr() as usize == output.as_ptr() as usize`
 /// * `input.len() * size_of::<A>() == output.len() * size_of::<B>()`
@@ -134,37 +199,37 @@ pub fn cast_slice_mut<A: Pod, B: Pod>(a: &[A]) -> &[B] {
 /// * Similarly, you can't convert between a
 ///   [ZST](https://doc.rust-lang.org/nomicon/exotic-sizes.html#zero-sized-types-zsts)
 ///   and a non-ZST.
-pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], SliceCastError> {
+pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], PodCastError> {
   // Note(Lokathor): everything with `align_of` and `size_of` will optimize away
   // after monomorphization.
   if align_of::<B>() > align_of::<A>() && (a.as_ptr() as usize) % align_of::<B>() != 0 {
-    Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+    Err(PodCastError::TargetAlignmentGreaterAndInputNotAligned)
   } else if size_of::<B>() == size_of::<A>() {
     Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, a.len()) })
   } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
-    Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
+    Err(PodCastError::CantConvertBetweenZSTAndNonZST)
   } else if core::mem::size_of_val(a) % size_of::<B>() == 0 {
     let new_len = core::mem::size_of_val(a) / size_of::<B>();
     Ok(unsafe { core::slice::from_raw_parts(a.as_ptr() as *const B, new_len) })
   } else {
-    Err(SliceCastError::OutputSliceWouldHaveSlop)
+    Err(PodCastError::OutputSliceWouldHaveSlop)
   }
 }
 
-/// As [try_cast_slice](try_cast_slice), but `mut`.
-pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], SliceCastError> {
+/// As [`try_cast_slice`], but `mut`.
+pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], PodCastError> {
   // Note(Lokathor): everything with `align_of` and `size_of` will optimize away
   // after monomorphization.
   if align_of::<B>() > align_of::<A>() && (a.as_ptr() as usize) % align_of::<B>() != 0 {
-    Err(SliceCastError::TargetAlignmentGreaterAndInputNotAligned)
+    Err(PodCastError::TargetAlignmentGreaterAndInputNotAligned)
   } else if size_of::<B>() == size_of::<A>() {
     Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, a.len()) })
   } else if size_of::<A>() == 0 || size_of::<B>() == 0 {
-    Err(SliceCastError::CantConvertBetweenZSTAndNonZST)
+    Err(PodCastError::CantConvertBetweenZSTAndNonZST)
   } else if core::mem::size_of_val(a) % size_of::<B>() == 0 {
     let new_len = core::mem::size_of_val(a) / size_of::<B>();
     Ok(unsafe { core::slice::from_raw_parts_mut(a.as_ptr() as *mut B, new_len) })
   } else {
-    Err(SliceCastError::OutputSliceWouldHaveSlop)
+    Err(PodCastError::OutputSliceWouldHaveSlop)
   }
 }

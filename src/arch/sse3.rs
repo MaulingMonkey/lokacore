@@ -3,7 +3,7 @@ use super::*;
 /// # SSE3 Operations
 impl m128 {
   /// Adds odd lanes (3 and 1) and subtracts even lanes (2 and 0).
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0] - rhs[0]
   /// out[1]= self[1] + rhs[1]
@@ -16,7 +16,7 @@ impl m128 {
   }
 
   /// Horizontal add both `self` and `rhs`, then pack together.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0] + self[1]
   /// out[1]= self[2] + self[3]
@@ -29,7 +29,7 @@ impl m128 {
   }
 
   /// Horizontal subtract both `self` and `rhs`, then pack together.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0] - self[1]
   /// out[1]= self[2] - self[3]
@@ -42,7 +42,7 @@ impl m128 {
   }
 
   /// Duplicate odd indexed lanes into a new `m128`.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[1]
   /// out[1]= self[1]
@@ -55,7 +55,7 @@ impl m128 {
   }
 
   /// Duplicate even indexed lanes into a new `m128`.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0]
   /// out[1]= self[0]
@@ -71,7 +71,7 @@ impl m128 {
 /// # SSE3 Operations
 impl m128d {
   /// Adds the high lane (1) and subtracts the low lane (0).
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0] - rhs[0]
   /// out[1]= self[1] + rhs[1]
@@ -82,7 +82,7 @@ impl m128d {
   }
 
   /// Horizontal add both `self` and `rhs`, then pack together.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0] + self[1]
   /// out[1]= rhs[0] + rhs[1]
@@ -93,7 +93,7 @@ impl m128d {
   }
 
   /// Horizontal subtract both `self` and `rhs`, then pack together.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0] - self[1]
   /// out[1]= rhs[0] - rhs[1]
@@ -111,7 +111,7 @@ impl m128d {
   }
 
   /// Duplicate the low lane of `self` into both lanes of a new `m128d`.
-  /// 
+  ///
   /// ```txt
   /// out[0]= self[0]
   /// out[1]= self[0]
