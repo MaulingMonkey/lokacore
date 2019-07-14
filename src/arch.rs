@@ -10,7 +10,7 @@
 //! Currently supported arches are:
 //!
 //! * `x86`
-//! * `x86_64`
+//! * `x86_64` (a strict superset of `x86`)
 //!
 //! This particular module just safe wraps each available intrinsic as directly
 //! as possible.
