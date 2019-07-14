@@ -18,10 +18,6 @@ unsafe impl Pod for __m256i {}
 unsafe impl Pod for __m256 {}
 unsafe impl Pod for __m256d {}
 
-// Note(Lokathor): THE SAFETY OF THE SSE AND SSE2 MODULES DEPENDS UPON COMPILE
-// TIME FEATURE SETTINGS. THEY DO NOT PERFORM ANY RUNTIME FEATURE DETECTION. YOU
-// SHOULD NOT REMOVE THE TARGET FEATURE ATTRIBUTES FOR ANY REASON.
-
 #[cfg(target_feature = "sse")]
 #[path = "sse.rs"]
 mod sse;
