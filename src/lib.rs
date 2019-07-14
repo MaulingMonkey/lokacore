@@ -15,9 +15,11 @@ pub mod arch;
 mod marker;
 pub use marker::*;
 
-/// `branchless_abs!(a, type)` gives the
+/// The
 /// [wrapping](https://doc.rust-lang.org/std/primitive.i8.html#method.wrapping_abs)
 /// absolute value of any signed integer.
+/// 
+/// * `branchless_abs!(a, type)`
 ///
 /// Branchless, so you can use it in a `const` context.
 #[macro_export]
@@ -28,7 +30,9 @@ macro_rules! branchless_abs {
   }};
 }
 
-/// `branchless_min!(a, b, type)` gives the minimum of two integer values.
+/// The minimum of two integer values.
+/// 
+/// * `branchless_min!(a, b, type)`
 ///
 /// Branchless, so you can use it in a `const` context.
 #[macro_export]
@@ -38,7 +42,9 @@ macro_rules! branchless_min {
   };
 }
 
-/// `branchless_max!(a, b, type)` gives the maximum of two integer values.
+/// The maximum of two integer values.
+/// 
+/// * `branchless_max!(a, b, type)`
 ///
 /// Branchless, so you can use it in a `const` context.
 #[macro_export]
