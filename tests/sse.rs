@@ -532,6 +532,7 @@ fn m128_round_extract0_i32() {
 }
 
 #[test]
+#[cfg(target_arch = "x86_64")]
 fn m128_round_replace0_i64() {
   let a: m128 = cast([5.0_f32, 0.0, 0.0, 1.0]);
   for i in [0, -1, i64::max_value(), i64::min_value()].iter().copied() {
@@ -548,6 +549,7 @@ fn m128_extract0_f32() {
 }
 
 #[test]
+#[cfg(target_arch = "x86_64")]
 fn m128_round_extract0_i64() {
   // Note(Lokathor): These asserts are for the default round mode, "round
   // nearest", which rounds to even if two values are equally close.
@@ -586,6 +588,7 @@ fn m128_truncate_extract0_i32() {
 }
 
 #[test]
+#[cfg(target_arch = "x86_64")]
 fn m128_truncate_extract0_i64() {
   let a: m128 = cast([5.0_f32, 0.0, 0.0, 0.0]);
   assert_eq!(a.truncate_extract0_i64(), 5_i64);

@@ -327,10 +327,10 @@ impl m128 {
   ///
   /// Subject to the current thread's [rounding
   /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
-  /// 
+  ///
   /// Not available to `x86`
   #[inline(always)]
-  #[cfg(target_arch="x86_64")]
+  #[cfg(target_arch = "x86_64")]
   pub fn round_replace0_i64(self, rhs: i64) -> Self {
     Self(unsafe { _mm_cvtsi64_ss(self.0, rhs) })
   }
@@ -346,6 +346,7 @@ impl m128 {
   /// Subject to the current thread's [rounding
   /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
   #[inline(always)]
+  #[cfg(target_arch = "x86_64")]
   pub fn round_extract0_i64(self) -> i64 {
     unsafe { _mm_cvtss_si64(self.0) }
   }
@@ -358,6 +359,7 @@ impl m128 {
 
   /// Truncate lane 0 to `i64` and return.
   #[inline(always)]
+  #[cfg(target_arch = "x86_64")]
   pub fn truncate_extract0_i64(self) -> i64 {
     unsafe { _mm_cvttss_si64(self.0) }
   }
@@ -379,9 +381,9 @@ impl ExceptionMask {
     self.0
   }
   /// Turns a raw `u32` value into an exception mask without any checks.
-  /// 
+  ///
   /// ## Safety
-  /// 
+  ///
   /// You must not pass a `u32` with invalid bits set.
   pub const unsafe fn from_raw_unchecked(val: u32) -> Self {
     Self(val)
