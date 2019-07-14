@@ -40,7 +40,7 @@ mod sse3;
 #[cfg(target_feature = "sse3")]
 pub use sse3::*;
 
-/// As [`_rdtsc`](core::arch::x86_64::_rdtsc).
+/// As [`_rdtsc`](https://doc.rust-lang.org/core/arch/x86_64/fn._rdtsc.html).
 #[inline]
 pub fn rdtsc() -> u64 {
   unsafe { _rdtsc() }
