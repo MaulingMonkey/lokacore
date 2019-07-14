@@ -1,4 +1,5 @@
 #![cfg(target_feature = "sse")]
+#![allow(bad_style)]
 
 #[path = "intel-simd-help.rs"]
 mod intel_simd_help;
@@ -84,7 +85,10 @@ fn m128_andnot() {
 #[test]
 fn m128_cmp_eq() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, false), (5.0, true), (6.0, false)].iter().copied() {
+  for (f, t) in [(4.0_f32, false), (5.0, true), (6.0, false)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_eq(b));
@@ -99,7 +103,10 @@ fn m128_cmp_eq() {
 #[test]
 fn m128_cmp_eq0() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, false), (5.0, true), (6.0, false)].iter().copied() {
+  for (f, t) in [(4.0_f32, false), (5.0, true), (6.0, false)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_eq0(b));
@@ -144,7 +151,10 @@ fn m128_cmp_ge0() {
 #[test]
 fn m128_cmp_gt() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)].iter().copied() {
+  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_gt(b));
@@ -159,7 +169,10 @@ fn m128_cmp_gt() {
 #[test]
 fn m128_cmp_gt0() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)].iter().copied() {
+  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_gt0(b));
@@ -204,7 +217,10 @@ fn m128_cmp_le0() {
 #[test]
 fn m128_cmp_lt() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)].iter().copied() {
+  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_lt(b));
@@ -219,7 +235,10 @@ fn m128_cmp_lt() {
 #[test]
 fn m128_cmp_lt0() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)].iter().copied() {
+  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_lt0(b));
@@ -264,7 +283,10 @@ fn m128_cmp_ne0() {
 #[test]
 fn m128_cmp_nge() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)].iter().copied() {
+  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_nge(b));
@@ -279,7 +301,10 @@ fn m128_cmp_nge() {
 #[test]
 fn m128_cmp_nge0() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)].iter().copied() {
+  for (f, t) in [(4.0_f32, true), (5.0, false), (6.0, false)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_nge0(b));
@@ -324,7 +349,10 @@ fn m128_cmp_ngt0() {
 #[test]
 fn m128_cmp_nle() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)].iter().copied() {
+  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_nle(b));
@@ -339,7 +367,10 @@ fn m128_cmp_nle() {
 #[test]
 fn m128_cmp_nle0() {
   let max = core::u32::MAX;
-  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)].iter().copied() {
+  for (f, t) in [(4.0_f32, false), (5.0, false), (6.0, true)]
+    .iter()
+    .copied()
+  {
     let a: m128 = cast([f, f, f, f]);
     let b: m128 = cast([5.0_f32, 5.0, 5.0, 5.0]);
     let out: [u32; 4] = cast(a.cmp_nle0(b));
@@ -485,13 +516,148 @@ fn m128_round_extract0_i32() {
   // Note(Lokathor): These asserts are for the default round mode, "round
   // nearest", which rounds to even if two values are equally close.
   let a: m128 = cast([5.0_f32, 0.0, 0.0, 0.0]);
-  assert_eq!(a.round_extract0_i32(), 5);
+  assert_eq!(a.round_extract0_i32(), 5_i32);
   let a: m128 = cast([5.3_f32, 0.0, 0.0, 0.0]);
-  assert_eq!(a.round_extract0_i32(), 5);
+  assert_eq!(a.round_extract0_i32(), 5_i32);
   let a: m128 = cast([5.5_f32, 0.0, 0.0, 0.0]);
-  assert_eq!(a.round_extract0_i32(), 6);
+  assert_eq!(a.round_extract0_i32(), 6_i32);
   let a: m128 = cast([5.7_f32, 0.0, 0.0, 0.0]);
-  assert_eq!(a.round_extract0_i32(), 6);
+  assert_eq!(a.round_extract0_i32(), 6_i32);
   let a: m128 = cast([-1.2_f32, 0.0, 0.0, 0.0]);
-  assert_eq!(a.round_extract0_i32(), -1);
+  assert_eq!(a.round_extract0_i32(), -1_i32);
+  let a: m128 = cast([-1.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i32(), -2_i32);
+  let a: m128 = cast([-1.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i32(), -2_i32);
+}
+
+#[test]
+fn m128_round_replace0_i64() {
+  let a: m128 = cast([5.0_f32, 0.0, 0.0, 1.0]);
+  for i in [0, -1, i64::max_value(), i64::min_value()].iter().copied() {
+    let out: [u32; 4] = cast(a.round_replace0_i64(i));
+    assert_eq!(out, [(i as f32).to_bits(), 0, 0, 1.0_f32.to_bits()]);
+  }
+}
+
+#[test]
+fn m128_extract0_f32() {
+  let a: m128 = cast([5.0_f32, 0.0, 0.0, 1.0]);
+  let f: f32 = a.extract0_f32();
+  assert_eq!(f.to_bits(), 5.0_f32.to_bits());
+}
+
+#[test]
+fn m128_round_extract0_i64() {
+  // Note(Lokathor): These asserts are for the default round mode, "round
+  // nearest", which rounds to even if two values are equally close.
+  let a: m128 = cast([5.0_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), 5_i64);
+  let a: m128 = cast([5.3_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), 5_i64);
+  let a: m128 = cast([5.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), 6_i64);
+  let a: m128 = cast([5.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), 6_i64);
+  let a: m128 = cast([-1.2_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), -1_i64);
+  let a: m128 = cast([-1.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), -2_i64);
+  let a: m128 = cast([-1.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.round_extract0_i64(), -2_i64);
+}
+
+#[test]
+fn m128_truncate_extract0_i32() {
+  let a: m128 = cast([5.0_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), 5_i32);
+  let a: m128 = cast([5.3_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), 5_i32);
+  let a: m128 = cast([5.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), 5_i32);
+  let a: m128 = cast([5.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), 5_i32);
+  let a: m128 = cast([-1.2_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), -1_i32);
+  let a: m128 = cast([-1.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), -1_i32);
+  let a: m128 = cast([-1.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i32(), -1_i32);
+}
+
+#[test]
+fn m128_truncate_extract0_i64() {
+  let a: m128 = cast([5.0_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), 5_i64);
+  let a: m128 = cast([5.3_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), 5_i64);
+  let a: m128 = cast([5.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), 5_i64);
+  let a: m128 = cast([5.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), 5_i64);
+  let a: m128 = cast([-1.2_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), -1_i64);
+  let a: m128 = cast([-1.5_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), -1_i64);
+  let a: m128 = cast([-1.7_f32, 0.0, 0.0, 0.0]);
+  assert_eq!(a.truncate_extract0_i64(), -1_i64);
+}
+
+#[test]
+fn m128_div() {
+  let a: m128 = cast([8.0_f32, 12.0, 15.0, 9.0]);
+  let b: m128 = cast([-2.0_f32, 3.0, 2.0, 0.5]);
+  let out: [f32; 4] = cast(a / b);
+  assert_eq!(out, [-4.0, 4.0, 7.5, 18.0]);
+}
+
+#[test]
+fn m128_div_assign() {
+  let mut a: m128 = cast([8.0_f32, 12.0, 15.0, 9.0]);
+  let b: m128 = cast([-2.0_f32, 3.0, 2.0, 0.5]);
+  a /= b;
+  let out: [f32; 4] = cast(a);
+  assert_eq!(out, [-4.0, 4.0, 7.5, 18.0]);
+}
+
+#[test]
+fn m128_div0() {
+  let a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([2.0_f32, 4.0, 1.0, 0.5]);
+  let out: [f32; 4] = cast(a.div0(b));
+  assert_eq!(out, [2.5_f32, 6.0, 7.0, 8.5]);
+}
+
+#[test]
+fn test_exception_mask() {
+  let _: ExceptionMask = exception_mask();
+}
+
+#[test]
+fn ExceptionMask_get_set() {
+  let mut mask = unsafe { ExceptionMask::from_raw_unchecked(0) };
+  //
+  assert!(!mask.invalid());
+  mask.set_invalid(true);
+  assert!(mask.invalid());
+  //
+  assert!(!mask.denorm());
+  mask.set_denorm(true);
+  assert!(mask.denorm());
+  //
+  assert!(!mask.div_zero());
+  mask.set_div_zero(true);
+  assert!(mask.div_zero());
+  //
+  assert!(!mask.overflow());
+  mask.set_overflow(true);
+  assert!(mask.overflow());
+  //
+  assert!(!mask.underflow());
+  mask.set_underflow(true);
+  assert!(mask.underflow());
+  //
+  assert!(!mask.inexact());
+  mask.set_inexact(true);
+  assert!(mask.inexact());
 }

@@ -94,6 +94,22 @@ impl BitAndAssign for m128 {
   }
 }
 
+impl Div for m128 {
+  type Output = Self;
+  /// Lanewise division.
+  #[inline(always)]
+  fn div(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_div_ps(self.0, rhs.0) })
+  }
+}
+impl DivAssign for m128 {
+  /// Lanewise division.
+  #[inline(always)]
+  fn div_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_div_ps(self.0, rhs.0) };
+  }
+}
+
 impl m128 {
   /// Adds the 0th lanes without affecting the other lanes of `self.
   #[inline(always)]
@@ -180,7 +196,7 @@ impl m128 {
   }
 
   /// Lanewise `!(self >= rhs)` check, bool-ish output.
-  /// 
+  ///
   /// Also, this triggers 3rd Impact.
   #[inline(always)]
   pub fn cmp_nge(self, rhs: Self) -> Self {
@@ -232,72 +248,192 @@ impl m128 {
   /// Lanewise `self.not_nan() & rhs.not_nan()` check, bool-ish output.
   #[inline(always)]
   pub fn cmp_ordinary(self, rhs: Self) -> Self {
-    Self(unsafe { _mm_cmpord_ps (self.0, rhs.0) })
+    Self(unsafe { _mm_cmpord_ps(self.0, rhs.0) })
   }
 
   /// Lane 0: `self.not_nan() & rhs.not_nan()`, bool-ish output.
   #[inline(always)]
   pub fn cmp_ordinary0(self, rhs: Self) -> Self {
-    Self(unsafe { _mm_cmpord_ss (self.0, rhs.0) })
+    Self(unsafe { _mm_cmpord_ss(self.0, rhs.0) })
   }
 
   /// Lanewise `self.is_nan() | rhs.is_nan()` check, bool-ish output.
   #[inline(always)]
   pub fn cmp_nan(self, rhs: Self) -> Self {
-    Self(unsafe { _mm_cmpunord_ps  (self.0, rhs.0) })
+    Self(unsafe { _mm_cmpunord_ps(self.0, rhs.0) })
   }
 
   /// Lane 0: `self.is_nan() | rhs.is_nan()`, bool-ish output.
   #[inline(always)]
   pub fn cmp_nan0(self, rhs: Self) -> Self {
-    Self(unsafe { _mm_cmpunord_ss  (self.0, rhs.0) })
+    Self(unsafe { _mm_cmpunord_ss(self.0, rhs.0) })
   }
 
   /// Lane 0: `self == rhs`, 0 or 1 `i32` output.
   #[inline(always)]
   pub fn cmpi_eq0(self, rhs: Self) -> i32 {
-    unsafe { _mm_comieq_ss  (self.0, rhs.0) }
+    unsafe { _mm_comieq_ss(self.0, rhs.0) }
   }
 
   /// Lane 0: `self >= rhs`, 0 or 1 `i32` output.
   #[inline(always)]
   pub fn cmpi_ge0(self, rhs: Self) -> i32 {
-    unsafe { _mm_comige_ss  (self.0, rhs.0) }
+    unsafe { _mm_comige_ss(self.0, rhs.0) }
   }
 
   /// Lane 0: `self > rhs`, 0 or 1 `i32` output.
   #[inline(always)]
   pub fn cmpi_gt0(self, rhs: Self) -> i32 {
-    unsafe { _mm_comigt_ss  (self.0, rhs.0) }
+    unsafe { _mm_comigt_ss(self.0, rhs.0) }
   }
 
   /// Lane 0: `self <= rhs`, 0 or 1 `i32` output.
   #[inline(always)]
   pub fn cmpi_le0(self, rhs: Self) -> i32 {
-    unsafe { _mm_comile_ss  (self.0, rhs.0) }
+    unsafe { _mm_comile_ss(self.0, rhs.0) }
   }
 
   /// Lane 0: `self < rhs`, 0 or 1 `i32` output.
   #[inline(always)]
   pub fn cmpi_lt0(self, rhs: Self) -> i32 {
-    unsafe { _mm_comilt_ss  (self.0, rhs.0) }
+    unsafe { _mm_comilt_ss(self.0, rhs.0) }
   }
 
   /// Lane 0: `self != rhs`, 0 or 1 `i32` output.
   #[inline(always)]
   pub fn cmpi_ne0(self, rhs: Self) -> i32 {
-    unsafe { _mm_comineq_ss  (self.0, rhs.0) }
+    unsafe { _mm_comineq_ss(self.0, rhs.0) }
   }
 
   /// Round the `i32` to `f32` and replace lane 0.
+  ///
+  /// Subject to the current thread's [rounding
+  /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
   #[inline(always)]
   pub fn round_replace0_i32(self, rhs: i32) -> Self {
-    Self(unsafe { _mm_cvt_si2ss  (self.0, rhs) })
+    Self(unsafe { _mm_cvt_si2ss(self.0, rhs) })
   }
 
   /// Round lane 0 to `i32` and return.
+  ///
+  /// Subject to the current thread's [rounding
+  /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
   #[inline(always)]
   pub fn round_extract0_i32(self) -> i32 {
-    unsafe { _mm_cvt_ss2si   (self.0) }
+    unsafe { _mm_cvt_ss2si(self.0) }
   }
+
+  /// Round the `i64` to `f32` and replace lane 0.
+  ///
+  /// Subject to the current thread's [rounding
+  /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
+  #[inline(always)]
+  pub fn round_replace0_i64(self, rhs: i64) -> Self {
+    Self(unsafe { _mm_cvtsi64_ss(self.0, rhs) })
+  }
+
+  /// Directly extracts lane 0 as `f32`.
+  #[inline(always)]
+  pub fn extract0_f32(self) -> f32 {
+    unsafe { _mm_cvtss_f32(self.0) }
+  }
+
+  /// Round lane 0 to `i64` and return.
+  ///
+  /// Subject to the current thread's [rounding
+  /// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode)
+  #[inline(always)]
+  pub fn round_extract0_i64(self) -> i64 {
+    unsafe { _mm_cvtss_si64(self.0) }
+  }
+
+  /// Truncate lane 0 to `i32` and return.
+  #[inline(always)]
+  pub fn truncate_extract0_i32(self) -> i32 {
+    unsafe { _mm_cvtt_ss2si(self.0) }
+  }
+
+  /// Truncate lane 0 to `i64` and return.
+  #[inline(always)]
+  pub fn truncate_extract0_i64(self) -> i64 {
+    unsafe { _mm_cvttss_si64(self.0) }
+  }
+
+  /// Divides the 0th lanes without affecting the other lanes of `self.
+  #[inline(always)]
+  pub fn div0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_div_ss(self.0, rhs.0) })
+  }
+}
+
+/// A bit set of [exception
+/// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExceptionMask(u32);
+impl ExceptionMask {
+  /// The raw `u32` mask value.
+  pub const fn to_raw(self) -> u32 {
+    self.0
+  }
+  /// Turns a raw `u32` value into an exception mask without any checks.
+  /// 
+  /// ## Safety
+  /// 
+  /// You must not pass a `u32` with invalid bits set.
+  pub const unsafe fn from_raw_unchecked(val: u32) -> Self {
+    Self(val)
+  }
+  /// Check the `_MM_EXCEPT_INVALID` bit.
+  pub fn invalid(self) -> bool {
+    (self.0 & _MM_EXCEPT_INVALID) > 0
+  }
+  /// Set the `_MM_EXCEPT_INVALID` bit.
+  pub fn set_invalid(&mut self, invalid: bool) {
+    self.0 ^= (u32::from(invalid).wrapping_neg() ^ self.0) & _MM_EXCEPT_INVALID;
+  }
+  /// Check the `_MM_EXCEPT_DENORM` bit.
+  pub fn denorm(self) -> bool {
+    (self.0 & _MM_EXCEPT_DENORM) > 0
+  }
+  /// Set the `_MM_EXCEPT_DENORM` bit.
+  pub fn set_denorm(&mut self, denorm: bool) {
+    self.0 ^= (u32::from(denorm).wrapping_neg() ^ self.0) & _MM_EXCEPT_DENORM;
+  }
+  /// Check the `_MM_EXCEPT_DIV_ZERO` bit.
+  pub fn div_zero(self) -> bool {
+    (self.0 & _MM_EXCEPT_DIV_ZERO) > 0
+  }
+  /// Set the `_MM_EXCEPT_DIV_ZERO` bit.
+  pub fn set_div_zero(&mut self, div_zero: bool) {
+    self.0 ^= (u32::from(div_zero).wrapping_neg() ^ self.0) & _MM_EXCEPT_DIV_ZERO;
+  }
+  /// Check the `_MM_EXCEPT_OVERFLOW` bit.
+  pub fn overflow(self) -> bool {
+    (self.0 & _MM_EXCEPT_OVERFLOW) > 0
+  }
+  /// Set the `_MM_EXCEPT_OVERFLOW` bit.
+  pub fn set_overflow(&mut self, overflow: bool) {
+    self.0 ^= (u32::from(overflow).wrapping_neg() ^ self.0) & _MM_EXCEPT_OVERFLOW;
+  }
+  /// Check the `_MM_EXCEPT_UNDERFLOW` bit.
+  pub fn underflow(self) -> bool {
+    (self.0 & _MM_EXCEPT_UNDERFLOW) > 0
+  }
+  /// Set the `_MM_EXCEPT_UNDERFLOW` bit.
+  pub fn set_underflow(&mut self, underflow: bool) {
+    self.0 ^= (u32::from(underflow).wrapping_neg() ^ self.0) & _MM_EXCEPT_UNDERFLOW;
+  }
+  /// Check the `_MM_EXCEPT_INEXACT` bit.
+  pub fn inexact(self) -> bool {
+    (self.0 & _MM_EXCEPT_INEXACT) > 0
+  }
+  /// Set the `_MM_EXCEPT_INEXACT` bit.
+  pub fn set_inexact(&mut self, inexact: bool) {
+    self.0 ^= (u32::from(inexact).wrapping_neg() ^ self.0) & _MM_EXCEPT_INEXACT;
+  }
+}
+
+/// Calls to [`_MM_GET_EXCEPTION_MASK`](https://doc.rust-lang.org/core/arch/x86_64/fn._MM_GET_EXCEPTION_MASK.html), with newtype'd output.
+pub fn exception_mask() -> ExceptionMask {
+  ExceptionMask(unsafe { _MM_GET_EXCEPTION_MASK() })
 }
