@@ -147,7 +147,7 @@ pub fn try_cast<A: Pod, B: Pod>(a: A) -> Result<B, PodCastError> {
     // any potential alignment difficulties.
     let ap = &a as *const A as *const u8;
     let bp = &mut b as *mut B as *mut u8;
-    unsafe { core::intrinsics::copy_nonoverlapping(ap, bp, size_of::<A>()) }
+    unsafe { ap.copy_to_nonoverlapping(bp, size_of::<A>()) };
     Ok(b)
   } else {
     Err(PodCastError::SizeMismatch)
