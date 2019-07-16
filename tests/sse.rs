@@ -637,7 +637,7 @@ fn test_exception_mask() {
 }
 
 #[test]
-fn ExceptionMask_get_set() {
+fn ExceptionMask_methods() {
   let mut mask = unsafe { ExceptionMask::from_raw_unchecked(0) };
   //
   assert!(!mask.invalid());
@@ -663,4 +663,320 @@ fn ExceptionMask_get_set() {
   assert!(!mask.inexact());
   mask.set_inexact(true);
   assert!(mask.inexact());
+  //
+  let e = ExceptionMask::default();
+  assert_eq!(e.to_raw(), 0);
+  //
+  let mut e = ExceptionMask::default();
+  e.set_invalid(true);
+  assert_eq!(e.to_raw(), _MM_MASK_INVALID);
+  //
+  let mut e = ExceptionMask::default();
+  e.set_denorm(true);
+  assert_eq!(e.to_raw(), _MM_MASK_DENORM);
+  //
+  let mut e = ExceptionMask::default();
+  e.set_div_zero(true);
+  assert_eq!(e.to_raw(), _MM_MASK_DIV_ZERO);
+  //
+  let mut e = ExceptionMask::default();
+  e.set_overflow(true);
+  assert_eq!(e.to_raw(), _MM_MASK_OVERFLOW);
+  //
+  let mut e = ExceptionMask::default();
+  e.set_underflow(true);
+  assert_eq!(e.to_raw(), _MM_MASK_UNDERFLOW);
+  //
+  let mut e = ExceptionMask::default();
+  e.set_inexact(true);
+  assert_eq!(e.to_raw(), _MM_MASK_INEXACT);
+}
+
+#[test]
+fn test_exception_state() {
+  let _: ExceptionState = exception_state();
+}
+
+#[test]
+fn ExceptionState_methods() {
+  let mut mask = unsafe { ExceptionState::from_raw_unchecked(0) };
+  //
+  assert!(!mask.invalid());
+  mask.set_invalid(true);
+  assert!(mask.invalid());
+  //
+  assert!(!mask.denorm());
+  mask.set_denorm(true);
+  assert!(mask.denorm());
+  //
+  assert!(!mask.div_zero());
+  mask.set_div_zero(true);
+  assert!(mask.div_zero());
+  //
+  assert!(!mask.overflow());
+  mask.set_overflow(true);
+  assert!(mask.overflow());
+  //
+  assert!(!mask.underflow());
+  mask.set_underflow(true);
+  assert!(mask.underflow());
+  //
+  assert!(!mask.inexact());
+  mask.set_inexact(true);
+  assert!(mask.inexact());
+  //
+  let e = ExceptionState::default();
+  assert_eq!(e.to_raw(), 0);
+  //
+  let mut e = ExceptionState::default();
+  e.set_invalid(true);
+  assert_eq!(e.to_raw(), _MM_EXCEPT_INVALID);
+  //
+  let mut e = ExceptionState::default();
+  e.set_denorm(true);
+  assert_eq!(e.to_raw(), _MM_EXCEPT_DENORM);
+  //
+  let mut e = ExceptionState::default();
+  e.set_div_zero(true);
+  assert_eq!(e.to_raw(), _MM_EXCEPT_DIV_ZERO);
+  //
+  let mut e = ExceptionState::default();
+  e.set_overflow(true);
+  assert_eq!(e.to_raw(), _MM_EXCEPT_OVERFLOW);
+  //
+  let mut e = ExceptionState::default();
+  e.set_underflow(true);
+  assert_eq!(e.to_raw(), _MM_EXCEPT_UNDERFLOW);
+  //
+  let mut e = ExceptionState::default();
+  e.set_inexact(true);
+  assert_eq!(e.to_raw(), _MM_EXCEPT_INEXACT);
+}
+
+#[test]
+fn test_flush_zero_mode_on() {
+  let _: bool = flush_zero_mode_on();
+}
+
+#[test]
+fn test_rounding_mode() {
+  let _: RoundingMode = rounding_mode();
+}
+
+#[test]
+fn test_control_status_register() {
+  let _: u32 = control_status_register();
+}
+
+#[test]
+fn m128_load() {
+  let aligned_array = Align16([5.0_f32, 6.0, 7.0, 8.0]);
+  let m_load: m128 = m128::load(&aligned_array);
+  let u32x4_load: [u32; 4] = cast(m_load);
+  let m_transmute: m128 = cast(aligned_array);
+  let u32x4_transmute: [u32; 4] = cast(m_transmute);
+  assert_eq!(u32x4_load[0], u32x4_transmute[0]);
+  assert_eq!(u32x4_load[1], u32x4_transmute[1]);
+  assert_eq!(u32x4_load[2], u32x4_transmute[2]);
+  assert_eq!(u32x4_load[3], u32x4_transmute[3]);
+  // Note(Lokathor): extra sanity check that offset0 == index0
+  let lane0 = unsafe { *(&m_load as *const m128 as *const f32) };
+  let lane0_bits = lane0.to_bits();
+  assert_eq!(lane0_bits, aligned_array.0[0].to_bits());
+}
+
+#[test]
+fn m128_load_splat() {
+  let float = 5.0_f32;
+  let m: m128 = m128::load_splat(&float);
+  let m_bits: [u32; 4] = cast(m);
+  let float_bits_x4: [u32; 4] = cast([float, float, float, float]);
+  assert_eq!(m_bits, float_bits_x4);
+}
+
+#[test]
+fn m128_load0() {
+  let float = 5.0_f32;
+  let m: m128 = m128::load0(&float);
+  let m_bits: [u32; 4] = cast(m);
+  let float_bits_x4: [u32; 4] = cast([float, 0.0, 0.0, 0.0]);
+  assert_eq!(m_bits, float_bits_x4);
+}
+
+#[test]
+fn m128_load_reverse() {
+  let aligned_array = Align16([5.0_f32, 6.0, 7.0, 8.0]);
+  let m_load_reverse: m128 = m128::load_reverse(&aligned_array);
+  let u32x4_load_reverse: [u32; 4] = cast(m_load_reverse);
+  let m_transmute: m128 = cast(aligned_array);
+  let u32x4_transmute: [u32; 4] = cast(m_transmute);
+  assert_eq!(u32x4_load_reverse[0], u32x4_transmute[3]);
+  assert_eq!(u32x4_load_reverse[1], u32x4_transmute[2]);
+  assert_eq!(u32x4_load_reverse[2], u32x4_transmute[1]);
+  assert_eq!(u32x4_load_reverse[3], u32x4_transmute[0]);
+  // Note(Lokathor): extra sanity check that offset0 == index3
+  let lane0 = unsafe { *(&m_load_reverse as *const m128 as *const f32) };
+  let lane0_bits = lane0.to_bits();
+  assert_eq!(lane0_bits, aligned_array.0[3].to_bits());
+}
+
+#[test]
+fn m128_load_unaligned() {
+  let array = [5.0_f32, 6.0, 7.0, 8.0];
+  let m_load_unaligned: m128 = m128::load_unaligned(&array);
+  let u32x4_load: [u32; 4] = cast(m_load_unaligned);
+  let m_transmute: m128 = cast(array);
+  let u32x4_transmute: [u32; 4] = cast(m_transmute);
+  assert_eq!(u32x4_load[0], u32x4_transmute[0]);
+  assert_eq!(u32x4_load[1], u32x4_transmute[1]);
+  assert_eq!(u32x4_load[2], u32x4_transmute[2]);
+  assert_eq!(u32x4_load[3], u32x4_transmute[3]);
+  // Note(Lokathor): extra sanity check that offset0 == index0
+  let lane0 = unsafe { *(&m_load_unaligned as *const m128 as *const f32) };
+  let lane0_bits = lane0.to_bits();
+  assert_eq!(lane0_bits, array[0].to_bits());
+}
+
+#[test]
+fn m128_max() {
+  let a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.max(b));
+  assert_eq!(out, [5.0_f32, 6.0, 12.0, 8.5]);
+}
+
+#[test]
+fn m128_max0() {
+  let a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.max0(b));
+  assert_eq!(out, [5.0_f32, 6.0, 7.0, 8.5]);
+}
+
+#[test]
+fn m128_min() {
+  let a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.min(b));
+  assert_eq!(out, [-8.0_f32, 4.0, 7.0, 0.5]);
+}
+
+#[test]
+fn m128_min0() {
+  let a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.min0(b));
+  assert_eq!(out, [-8.0_f32, 6.0, 7.0, 8.5]);
+}
+
+#[test]
+fn m128_copy0() {
+  let a: m128 = cast([5.0_f32, 6.0, 13.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.copy0(b));
+  assert_eq!(out, [-8.0_f32, 6.0, 13.0, 8.5]);
+}
+
+#[test]
+fn m128_copy_high_low() {
+  let a: m128 = cast([5.0_f32, 6.0, 13.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.copy_high_low(b));
+  assert_eq!(out, [12.0_f32, 0.5, 13.0, 8.5]);
+}
+
+#[test]
+fn m128_copy_low_high() {
+  let a: m128 = cast([5.0_f32, 6.0, 13.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 12.0, 0.5]);
+  let out: [f32; 4] = cast(a.copy_low_high(b));
+  assert_eq!(out, [5.0_f32, 6.0, -8.0, 4.0]);
+}
+
+#[test]
+fn m128_move_mask() {
+  let max = core::u32::MAX;
+  for target_mask in 0..16 {
+    let arr: [u32; 4] = [
+      max * (target_mask & 0b1),
+      max * ((target_mask & 0b10) >> 1),
+      max * ((target_mask & 0b100) >> 2),
+      max * ((target_mask & 0b1000) >> 3),
+    ];
+    let m: m128 = cast(arr);
+    let out_mask: i32 = m.move_mask();
+    assert_eq!(out_mask as u32, target_mask);
+  }
+}
+
+#[test]
+fn m128_mul() {
+  let a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 1.0, 0.5]);
+  let out: [f32; 4] = cast(a * b);
+  assert_eq!(out, [-40.0, 24.0, 7.0, 4.25]);
+}
+
+#[test]
+fn m128_mul_assign() {
+  let mut a: m128 = cast([5.0_f32, 6.0, 7.0, 8.5]);
+  let b: m128 = cast([-8.0_f32, 4.0, 1.0, 0.5]);
+  a *= b;
+  let out: [f32; 4] = cast(a);
+  assert_eq!(out, [-40.0, 24.0, 7.0, 4.25]);
+}
+
+#[test]
+fn m128_bitor() {
+  let max = core::u32::MAX;
+  let a: m128 = cast([0, max, max, 0]);
+  let b: m128 = cast([max, 0, max, 0]);
+  let out: [u32; 4] = cast(a | b);
+  assert_eq!(out, [max, max, max, 0]);
+}
+
+#[test]
+fn m128_bitor_assign() {
+  let max = core::u32::MAX;
+  let mut a: m128 = cast([0, max, max, 0]);
+  let b: m128 = cast([max, 0, max, 0]);
+  a |= b;
+  let out: [u32; 4] = cast(a);
+  assert_eq!(out, [max, max, max, 0]);
+}
+
+#[test]
+fn test_prefetch() {
+  //Note(Lokathor): There's nothing to assert since there's no correctness
+  //change between a prefetch or not, but we'll just call each once in case we
+  //delete them or rename them on accident or something.
+  prefetch0(&0);
+  prefetch1(&1);
+  prefetch2(&2);
+  prefetch_nta(&['n', 't', 'a']);
+}
+
+//
+// TODO: fix how we test for approximations
+//
+
+#[test]
+fn m128_reciprocal() {
+  let a: m128 = cast([2.0_f32, 3.0, 5.0, -12.3]);
+  let out: [f32; 4] = cast(a.reciprocal());
+  assert_approx_f32!(out[0], 1.0/2.0, 0.001);
+  assert_approx_f32!(out[1], 1.0/3.0, 0.001);
+  assert_approx_f32!(out[2], 1.0/5.0, 0.001);
+  assert_approx_f32!(out[3], 1.0/-12.3, 0.001);
+}
+
+#[test]
+#[allow(clippy::float_cmp)]
+fn m128_reciprocal0() {
+  let a: m128 = cast([2.0_f32, 6.0, 7.0, 8.5]);
+  let out: [f32; 4] = cast(a.reciprocal0());
+  assert_approx_f32!(out[0], 1.0/2.0, 0.001);
+  assert_eq!(out[1], 6.0);
+  assert_eq!(out[2], 7.0);
+  assert_eq!(out[3], 8.5);
 }

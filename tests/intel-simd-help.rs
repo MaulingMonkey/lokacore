@@ -14,3 +14,11 @@ pub use lokacore::arch::x86_64::*;
 
 pub use core::mem::*;
 pub use lokacore::*;
+
+#[macro_export]
+macro_rules! assert_approx_f32{
+  ($a:expr, $b:expr, $max_diff:expr) => {
+    let diff: f32 = ($a - $b).abs();
+    assert!(diff <= $max_diff, "diff was:{}", diff);
+  }
+}

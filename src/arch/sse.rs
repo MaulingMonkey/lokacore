@@ -5,23 +5,21 @@ use core::ops::*;
 
 /// A 128-bit SIMD value. Always used as `f32x4`.
 ///
-/// * This documentation numbers the lanes sensibly: based on the index you'd
-///   need to use to access that lane if the value were cast to an array.
+/// * This documentation numbers the lanes based on the index you'd need to use
+///   to access that lane if the value were cast to an array.
 /// * This is also the way that the type is printed out using
 ///   [`Debug`](core::fmt::Debug), [`Display`](core::fmt::Display),
 ///   [`LowerExp`](core::fmt::LowerExp), and [`UpperExp`](core::fmt::UpperExp).
-/// * **Please note** that Intel hates you, so the normal [`set`](m128::set),
-///   [`load`](m128::load), and [`store`](m128::store) order is _opposite_ of
-///   sensible, index based ordering. The "unaligned" version also uses the
-///   normal order. There are "reverse" order operations, but not "reverse
-///   unaligned" versions.
+/// * This is not necessarily the ordering you'll see if you look an `xmm`
+///   register in a debugger! Basically because of how little-endian works.
 /// * Most operations work per-lane, "lanewise".
 /// * Some operations work using lane 0 only. When appropriate, these have the
 ///   same name as the lanewise version but with a `0` on the end. Eg: `cmp_eq`
 ///   and `cmp_eq0`. The other lanes are simply copied forward from `self`.
 /// * Comparisons give "bool-ish" output, where all bits 1 in a lane is true,
-///   and all bits 0 in a lane is false. Unfortunately, all bits 1 with a float
-///   is one of the `NaN` values, so that part can make it harder to work with.
+///   and all bits 0 in a lane is false. Unfortunately, all bits 1 with an `f32`
+///   is one of the `NaN` values, and `NaN != NaN`, so it can be a little tricky
+///   to work with until you're used to it.
 #[derive(Clone, Copy)]
 #[allow(bad_style)]
 #[repr(transparent)]
@@ -107,6 +105,38 @@ impl DivAssign for m128 {
   #[inline(always)]
   fn div_assign(&mut self, rhs: Self) {
     self.0 = unsafe { _mm_div_ps(self.0, rhs.0) };
+  }
+}
+
+impl Mul for m128 {
+  type Output = Self;
+  /// Lanewise multiplication.
+  #[inline(always)]
+  fn mul(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_mul_ps(self.0, rhs.0) })
+  }
+}
+impl MulAssign for m128 {
+  /// Lanewise multiplication.
+  #[inline(always)]
+  fn mul_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_mul_ps(self.0, rhs.0) };
+  }
+}
+
+impl BitOr for m128 {
+  type Output = Self;
+  /// Bitwise OR.
+  #[inline(always)]
+  fn bitor(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_or_ps(self.0, rhs.0) })
+  }
+}
+impl BitOrAssign for m128 {
+  /// Bitwise OR.
+  #[inline(always)]
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_or_ps(self.0, rhs.0) };
   }
 }
 
@@ -369,14 +399,144 @@ impl m128 {
   pub fn div0(self, rhs: Self) -> Self {
     Self(unsafe { _mm_div_ss(self.0, rhs.0) })
   }
+
+  /// Loads a 16-byte aligned `f32` array address into an `m128`.
+  ///
+  /// This produces the same lane order as you'd get if you de-referenced the
+  /// pointed to array and then used `transmute`.
+  #[inline(always)]
+  pub fn load(addr: &Align16<[f32; 4]>) -> Self {
+    let ptr: *const f32 = addr as *const Align16<[f32; 4]> as *const f32;
+    Self(unsafe { _mm_load_ps(ptr) })
+  }
+
+  /// Loads the `f32` address into all lanes.
+  #[allow(clippy::trivially_copy_pass_by_ref)]
+  #[inline(always)]
+  pub fn load_splat(addr: &f32) -> Self {
+    Self(unsafe { _mm_load_ps1(addr) })
+  }
+
+  /// Loads the `f32` address into lane 0, other lanes are `0.0`.
+  #[allow(clippy::trivially_copy_pass_by_ref)]
+  #[inline(always)]
+  pub fn load0(addr: &f32) -> Self {
+    Self(unsafe { _mm_load_ss(addr) })
+  }
+
+  /// Loads 16-byte aligned `f32`s into an `m128`.
+  ///
+  /// This produces the **reverse** lane order as you'd get if you used a
+  /// `transmute` on the pointed to array.
+  #[inline(always)]
+  pub fn load_reverse(addr: &Align16<[f32; 4]>) -> Self {
+    let ptr: *const f32 = addr as *const Align16<[f32; 4]> as *const f32;
+    Self(unsafe { _mm_loadr_ps(ptr) })
+  }
+
+  /// Loads 16-byte `f32`s into an `m128`.
+  ///
+  /// This doesn't have the alignment requirements of [`load`](m128::load), but
+  /// the lane ordering is the same.
+  #[inline(always)]
+  pub fn load_unaligned(addr: &[f32; 4]) -> Self {
+    let ptr: *const f32 = addr as *const [f32; 4] as *const f32;
+    Self(unsafe { _mm_loadu_ps(ptr) })
+  }
+
+  /// Lanewise maximum.
+  #[inline(always)]
+  pub fn max(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_max_ps(self.0, rhs.0) })
+  }
+
+  /// Lane 0 maximum, other lanes are `self`.
+  #[inline(always)]
+  pub fn max0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_max_ss(self.0, rhs.0) })
+  }
+
+  /// Lanewise minimum.
+  #[inline(always)]
+  pub fn min(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_min_ps(self.0, rhs.0) })
+  }
+
+  /// Lane 0 minimum, other lanes are `self`.
+  #[inline(always)]
+  pub fn min0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_min_ss(self.0, rhs.0) })
+  }
+
+  /// Copies lane 0 from `rhs`, other lanes are `self`.
+  #[inline(always)]
+  pub fn copy0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_move_ss(self.0, rhs.0) })
+  }
+
+  /// Copy the high two lanes of `rhs` over top of the low two lanes of `self`,
+  /// other lanes unchanged.
+  ///
+  /// ```txt
+  /// out[0] = rhs[2]
+  /// out[1] = rhs[3]
+  /// out[2] = self[2]
+  /// out[3] = self[3]
+  /// ```
+  #[inline(always)]
+  pub fn copy_high_low(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_movehl_ps(self.0, rhs.0) })
+  }
+
+  /// Copy the low two lanes of `rhs` over top of the high two lanes of `self`,
+  /// other lanes unchanged.
+  ///
+  /// ```txt
+  /// out[0] = self[0]
+  /// out[1] = self[1]
+  /// out[2] = rhs[0]
+  /// out[3] = rhs[1]
+  /// ```
+  #[inline(always)]
+  pub fn copy_low_high(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_movelh_ps(self.0, rhs.0) })
+  }
+
+  /// Assumes that this is a bool-ish mask and packs it into an `i32`.
+  ///
+  /// Specifically, the output `i32` has bits 0/1/2/3 set to be the same as the
+  /// most significant bit in lanes 0/1/2/3 of `self`.
+  ///
+  /// (Yes, this name is kinda stupid but I couldn't come up with a better thing
+  /// to rename it to, oh well.)
+  #[inline(always)]
+  pub fn move_mask(self) -> i32 {
+    unsafe { _mm_movemask_ps(self.0) }
+  }
+
+  /// Lanewise approximate reciprocal.
+  ///
+  /// The maximum relative error for this approximation is less than 1.5*2.0e-12.
+  #[inline(always)]
+  pub fn reciprocal(self) -> Self {
+    Self(unsafe { _mm_rcp_ps(self.0) })
+  }
+
+  /// Lane 0 approximate reciprocal, other lanes are `self`.
+  ///
+  /// The maximum relative error for this approximation is less than 1.5*2.0e-12.
+  #[inline(always)]
+  pub fn reciprocal0(self) -> Self {
+    Self(unsafe { _mm_rcp_ss(self.0) })
+  }
 }
 
-/// A bit set of [exception
-/// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// A bit set of [masking
+/// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct ExceptionMask(u32);
 impl ExceptionMask {
-  /// The raw `u32` mask value.
+  /// The raw `u32` floating point exception value.
   pub const fn to_raw(self) -> u32 {
     self.0
   }
@@ -384,7 +544,96 @@ impl ExceptionMask {
   ///
   /// ## Safety
   ///
-  /// You must not pass a `u32` with invalid bits set.
+  /// You must not pass a `u32` with invalid bits set. Valid bits are any of the
+  /// constants listed in the [masking
+  /// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags)
+  /// section of [`_mm_setcsr`](core::arch::x86_64::_mm_setcsr). (Note: the link
+  /// is for the `x86_64` version, but this holds true on `x86` as well.)
+  pub const unsafe fn from_raw_unchecked(val: u32) -> Self {
+    Self(val)
+  }
+  /// Check the `_MM_MASK_INVALID` bit.
+  pub fn invalid(self) -> bool {
+    (self.0 & _MM_MASK_INVALID) > 0
+  }
+  /// Set the `_MM_MASK_INVALID` bit.
+  pub fn set_invalid(&mut self, invalid: bool) {
+    self.0 ^= (u32::from(invalid).wrapping_neg() ^ self.0) & _MM_MASK_INVALID;
+  }
+  /// Check the `_MM_MASK_DENORM` bit.
+  pub fn denorm(self) -> bool {
+    (self.0 & _MM_MASK_DENORM) > 0
+  }
+  /// Set the `_MM_MASK_DENORM` bit.
+  pub fn set_denorm(&mut self, denorm: bool) {
+    self.0 ^= (u32::from(denorm).wrapping_neg() ^ self.0) & _MM_MASK_DENORM;
+  }
+  /// Check the `_MM_MASK_DIV_ZERO` bit.
+  pub fn div_zero(self) -> bool {
+    (self.0 & _MM_MASK_DIV_ZERO) > 0
+  }
+  /// Set the `_MM_MASK_DIV_ZERO` bit.
+  pub fn set_div_zero(&mut self, div_zero: bool) {
+    self.0 ^= (u32::from(div_zero).wrapping_neg() ^ self.0) & _MM_MASK_DIV_ZERO;
+  }
+  /// Check the `_MM_MASK_OVERFLOW` bit.
+  pub fn overflow(self) -> bool {
+    (self.0 & _MM_MASK_OVERFLOW) > 0
+  }
+  /// Set the `_MM_MASK_OVERFLOW` bit.
+  pub fn set_overflow(&mut self, overflow: bool) {
+    self.0 ^= (u32::from(overflow).wrapping_neg() ^ self.0) & _MM_MASK_OVERFLOW;
+  }
+  /// Check the `_MM_MASK_UNDERFLOW` bit.
+  pub fn underflow(self) -> bool {
+    (self.0 & _MM_MASK_UNDERFLOW) > 0
+  }
+  /// Set the `_MM_MASK_UNDERFLOW` bit.
+  pub fn set_underflow(&mut self, underflow: bool) {
+    self.0 ^= (u32::from(underflow).wrapping_neg() ^ self.0) & _MM_MASK_UNDERFLOW;
+  }
+  /// Check the `_MM_MASK_INEXACT` bit.
+  pub fn inexact(self) -> bool {
+    (self.0 & _MM_MASK_INEXACT) > 0
+  }
+  /// Set the `_MM_MASK_INEXACT` bit.
+  pub fn set_inexact(&mut self, inexact: bool) {
+    self.0 ^= (u32::from(inexact).wrapping_neg() ^ self.0) & _MM_MASK_INEXACT;
+  }
+}
+
+/// What floating point exceptions are currently masked.
+///
+/// The default is for all exceptions to be masked, and this is thread local
+/// state.
+///
+/// When a _masked_ exception happens, the exception bit is set and then program
+/// proceeds. If an _unmasked_ exception happens the bit is set and then the
+/// exception handler is triggered. The standard rust handler terminates the
+/// process, so be careful.
+#[inline(always)]
+pub fn exception_mask() -> ExceptionMask {
+  ExceptionMask(unsafe { _MM_GET_EXCEPTION_MASK() })
+}
+
+/// A bit set of [exception
+/// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct ExceptionState(u32);
+impl ExceptionState {
+  /// The raw `u32` floating point exception value.
+  pub const fn to_raw(self) -> u32 {
+    self.0
+  }
+  /// Turns a raw `u32` value into an exception mask without any checks.
+  ///
+  /// ## Safety
+  ///
+  /// You must not pass a `u32` with invalid bits set. Valid bits are any of the
+  /// constants listed in the [exception
+  /// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags)
+  /// section of [`_mm_setcsr`](core::arch::x86_64::_mm_setcsr). (Note: the link
+  /// is for the `x86_64` version, but this holds true on `x86` as well.)
   pub const unsafe fn from_raw_unchecked(val: u32) -> Self {
     Self(val)
   }
@@ -438,7 +687,117 @@ impl ExceptionMask {
   }
 }
 
-/// Calls to [`_MM_GET_EXCEPTION_MASK`](https://doc.rust-lang.org/core/arch/x86_64/fn._MM_GET_EXCEPTION_MASK.html), with newtype'd output.
-pub fn exception_mask() -> ExceptionMask {
-  ExceptionMask(unsafe { _MM_GET_EXCEPTION_MASK() })
+/// What floating point exceptions have been triggered.
+///
+/// This doesn't get cleared automatically. If you care about when exceptions
+/// occurred you'll have to manually clear the exception state before your
+/// calculation, do your calculation, and then check the state after.
+#[inline(always)]
+pub fn exception_state() -> ExceptionState {
+  ExceptionState(unsafe { _MM_GET_EXCEPTION_STATE() })
+}
+
+/// If "flush denormals to zero" mode is on.
+///
+/// Off by default, thread local.
+#[inline(always)]
+pub fn flush_zero_mode_on() -> bool {
+  _MM_FLUSH_ZERO_ON == unsafe { _MM_GET_FLUSH_ZERO_MODE() }
+}
+
+/// The floating point rounding modes that can be set.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum RoundingMode {
+  /// Round to nearest. If two values are equally close, round to even.
+  Nearest = _MM_ROUND_NEAREST,
+  /// Round to down to negative infinity.
+  Down = _MM_ROUND_DOWN,
+  /// Round to up to positive infinity.
+  Up = _MM_ROUND_UP,
+  /// Truncate the value towards zero.
+  Truncate = _MM_ROUND_TOWARD_ZERO,
+}
+impl Default for RoundingMode {
+  fn default() -> Self {
+    RoundingMode::Nearest
+  }
+}
+
+/// Obtain the current [rounding
+/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode).
+///
+/// Defaults to `RoundingMode::Nearest`, thread local.
+#[inline(always)]
+pub fn rounding_mode() -> RoundingMode {
+  match unsafe { _MM_GET_ROUNDING_MODE() } {
+    _MM_ROUND_NEAREST => RoundingMode::Nearest,
+    _MM_ROUND_DOWN => RoundingMode::Down,
+    _MM_ROUND_UP => RoundingMode::Up,
+    _MM_ROUND_TOWARD_ZERO => RoundingMode::Truncate,
+    mode => unreachable!("The CPU has an illegal rounding mode value set:{}", mode),
+  }
+}
+
+/// Obtains the value of the `MXCSR` control and status register.
+///
+/// This is has info on exception masks, exception state, flush to zero mode,
+/// and rounding mode, all rolled in to one value.
+#[inline(always)]
+pub fn control_status_register() -> u32 {
+  unsafe { _mm_getcsr() }
+}
+
+/// Prefetch the cache line into all cache levels.
+///
+/// A prefetch is just a hint to the CPU and has no effect on the correctness
+/// (or not) of a program. In other words, you can prefetch literally any
+/// address and it's never UB. However, if you prefetch an invalid address the
+/// CPU can actually slow down for a moment as it figures out that your address
+/// isn't valid. So, don't go silly with this.
+///
+/// See Also: [`_mm_prefetch`](core::arch::x86_64::_mm_prefetch)
+#[inline(always)]
+pub fn prefetch0(ptr: *const impl Sized) {
+  unsafe { _mm_prefetch(ptr as *const i8, _MM_HINT_T0) }
+}
+
+/// Prefetch the cache line into L2 and higher.
+///
+/// A prefetch is just a hint to the CPU and has no effect on the correctness
+/// (or not) of a program. In other words, you can prefetch literally any
+/// address and it's never UB. However, if you prefetch an invalid address the
+/// CPU can actually slow down for a moment as it figures out that your address
+/// isn't valid. So, don't go silly with this.
+///
+/// See Also: [`_mm_prefetch`](core::arch::x86_64::_mm_prefetch)
+#[inline(always)]
+pub fn prefetch1(ptr: *const impl Sized) {
+  unsafe { _mm_prefetch(ptr as *const i8, _MM_HINT_T1) }
+}
+
+/// Prefetch the cache line into L3 and higher (or best effort).
+///
+/// A prefetch is just a hint to the CPU and has no effect on the correctness
+/// (or not) of a program. In other words, you can prefetch literally any
+/// address and it's never UB. However, if you prefetch an invalid address the
+/// CPU can actually slow down for a moment as it figures out that your address
+/// isn't valid. So, don't go silly with this.
+///
+/// See Also: [`_mm_prefetch`](core::arch::x86_64::_mm_prefetch)
+#[inline(always)]
+pub fn prefetch2(ptr: *const impl Sized) {
+  unsafe { _mm_prefetch(ptr as *const i8, _MM_HINT_T2) }
+}
+
+/// Prefetch with non-temporal hint.
+///
+/// When I asked a member of the Rust Language Team how they felt about
+/// non-temporal access, they simply replied with [the confounded
+/// emoji]https://emojipedia.org/confounded-face/). Non-temporal access is
+/// inherently racey-ish. I don't expose actual non-temporal access methods and
+/// functions, but a non-temporal _prefetch_ is still fine to do.
+#[inline(always)]
+pub fn prefetch_nta(ptr: *const impl Sized) {
+  unsafe { _mm_prefetch(ptr as *const i8, _MM_HINT_NTA) }
 }
