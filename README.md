@@ -8,3 +8,10 @@
 # lokacore
 
 Lokathor's core-only odds and ends
+
+Current features of note:
+
+* Safe casting between plain data types. Supports `T`, `&T`, `&mut T`, `&[T]`, and
+  `&mut [T]`.
+* Safe versions of all stable `x86` / `x86_64` intrinsics. At least, all the
+  ones that _can_ be made safe.
