@@ -97,7 +97,7 @@ impl_unsafe_marker_for_array!(
 /// * The type must not contain any padding bytes (eg: no `(u8, u16)`).
 /// * A struct needs to be `repr(C)`, or a `repr(transparent)` wrapper around a
 ///   `Pod` type.
-pub unsafe trait Pod: Zeroable + Copy {}
+pub unsafe trait Pod: Zeroable + Copy + 'static {}
 
 unsafe impl Pod for () {}
 unsafe impl Pod for u8 {}
@@ -126,10 +126,10 @@ unsafe impl Pod for Option<NonZeroU32> {}
 unsafe impl Pod for Option<NonZeroU64> {}
 unsafe impl Pod for Option<NonZeroU128> {}
 unsafe impl Pod for Option<NonZeroUsize> {}
-unsafe impl<T> Pod for *mut T {}
-unsafe impl<T> Pod for *const T {}
-unsafe impl<T> Pod for Option<NonNull<T>> {}
-unsafe impl<T> Pod for PhantomData<T> where T: Pod {}
+unsafe impl<T: 'static> Pod for *mut T {}
+unsafe impl<T: 'static> Pod for *const T {}
+unsafe impl<T: 'static> Pod for Option<NonNull<T>> {}
+unsafe impl<T: Pod> Pod for PhantomData<T> {}
 //
 unsafe impl Pod for Align2<[u8; 2]> {}
 unsafe impl Pod for Align2<[i8; 2]> {}

@@ -124,6 +124,22 @@ impl MulAssign for m128 {
   }
 }
 
+impl Sub for m128 {
+  type Output = Self;
+  /// Lanewise subtraction.
+  #[inline(always)]
+  fn sub(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_sub_ps(self.0, rhs.0) })
+  }
+}
+impl SubAssign for m128 {
+  /// Lanewise subtraction.
+  #[inline(always)]
+  fn sub_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_sub_ps(self.0, rhs.0) };
+  }
+}
+
 impl BitOr for m128 {
   type Output = Self;
   /// Bitwise OR.
@@ -137,6 +153,22 @@ impl BitOrAssign for m128 {
   #[inline(always)]
   fn bitor_assign(&mut self, rhs: Self) {
     self.0 = unsafe { _mm_or_ps(self.0, rhs.0) };
+  }
+}
+
+impl BitXor for m128 {
+  type Output = Self;
+  /// Bitwise XOR.
+  #[inline(always)]
+  fn bitxor(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_xor_ps(self.0, rhs.0) })
+  }
+}
+impl BitXorAssign for m128 {
+  /// Bitwise XOR.
+  #[inline(always)]
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_xor_ps(self.0, rhs.0) };
   }
 }
 
@@ -529,223 +561,137 @@ impl m128 {
   pub fn reciprocal0(self) -> Self {
     Self(unsafe { _mm_rcp_ss(self.0) })
   }
-}
 
-/// A bit set of [masking
-/// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags).
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ExceptionMask(u32);
-impl ExceptionMask {
-  /// The raw `u32` floating point exception value.
-  pub const fn to_raw(self) -> u32 {
-    self.0
-  }
-  /// Turns a raw `u32` value into an exception mask without any checks.
+  /// Lanewise approximate reciprocal of the square root.
   ///
-  /// ## Safety
+  /// The maximum relative error for this approximation is less than 1.5*2.0e-12.
+  #[inline(always)]
+  pub fn reciprocal_sqrt(self) -> Self {
+    Self(unsafe { _mm_rsqrt_ps(self.0) })
+  }
+
+  /// Lane 0 approximate reciprocal of the square root, other lanes are `self`.
   ///
-  /// You must not pass a `u32` with invalid bits set. Valid bits are any of the
-  /// constants listed in the [masking
-  /// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#masking-flags)
-  /// section of [`_mm_setcsr`](core::arch::x86_64::_mm_setcsr). (Note: the link
-  /// is for the `x86_64` version, but this holds true on `x86` as well.)
-  pub const unsafe fn from_raw_unchecked(val: u32) -> Self {
-    Self(val)
+  /// The maximum relative error for this approximation is less than 1.5*2.0e-12.
+  #[inline(always)]
+  pub fn reciprocal_sqrt0(self) -> Self {
+    Self(unsafe { _mm_rsqrt_ss(self.0) })
   }
-  /// Check the `_MM_MASK_INVALID` bit.
-  pub fn invalid(self) -> bool {
-    (self.0 & _MM_MASK_INVALID) > 0
-  }
-  /// Set the `_MM_MASK_INVALID` bit.
-  pub fn set_invalid(&mut self, invalid: bool) {
-    self.0 ^= (u32::from(invalid).wrapping_neg() ^ self.0) & _MM_MASK_INVALID;
-  }
-  /// Check the `_MM_MASK_DENORM` bit.
-  pub fn denorm(self) -> bool {
-    (self.0 & _MM_MASK_DENORM) > 0
-  }
-  /// Set the `_MM_MASK_DENORM` bit.
-  pub fn set_denorm(&mut self, denorm: bool) {
-    self.0 ^= (u32::from(denorm).wrapping_neg() ^ self.0) & _MM_MASK_DENORM;
-  }
-  /// Check the `_MM_MASK_DIV_ZERO` bit.
-  pub fn div_zero(self) -> bool {
-    (self.0 & _MM_MASK_DIV_ZERO) > 0
-  }
-  /// Set the `_MM_MASK_DIV_ZERO` bit.
-  pub fn set_div_zero(&mut self, div_zero: bool) {
-    self.0 ^= (u32::from(div_zero).wrapping_neg() ^ self.0) & _MM_MASK_DIV_ZERO;
-  }
-  /// Check the `_MM_MASK_OVERFLOW` bit.
-  pub fn overflow(self) -> bool {
-    (self.0 & _MM_MASK_OVERFLOW) > 0
-  }
-  /// Set the `_MM_MASK_OVERFLOW` bit.
-  pub fn set_overflow(&mut self, overflow: bool) {
-    self.0 ^= (u32::from(overflow).wrapping_neg() ^ self.0) & _MM_MASK_OVERFLOW;
-  }
-  /// Check the `_MM_MASK_UNDERFLOW` bit.
-  pub fn underflow(self) -> bool {
-    (self.0 & _MM_MASK_UNDERFLOW) > 0
-  }
-  /// Set the `_MM_MASK_UNDERFLOW` bit.
-  pub fn set_underflow(&mut self, underflow: bool) {
-    self.0 ^= (u32::from(underflow).wrapping_neg() ^ self.0) & _MM_MASK_UNDERFLOW;
-  }
-  /// Check the `_MM_MASK_INEXACT` bit.
-  pub fn inexact(self) -> bool {
-    (self.0 & _MM_MASK_INEXACT) > 0
-  }
-  /// Set the `_MM_MASK_INEXACT` bit.
-  pub fn set_inexact(&mut self, inexact: bool) {
-    self.0 ^= (u32::from(inexact).wrapping_neg() ^ self.0) & _MM_MASK_INEXACT;
-  }
-}
 
-/// What floating point exceptions are currently masked.
-///
-/// The default is for all exceptions to be masked, and this is thread local
-/// state.
-///
-/// When a _masked_ exception happens, the exception bit is set and then program
-/// proceeds. If an _unmasked_ exception happens the bit is set and then the
-/// exception handler is triggered. The standard rust handler terminates the
-/// process, so be careful.
-#[inline(always)]
-pub fn exception_mask() -> ExceptionMask {
-  ExceptionMask(unsafe { _MM_GET_EXCEPTION_MASK() })
-}
-
-/// A bit set of [exception
-/// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags).
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ExceptionState(u32);
-impl ExceptionState {
-  /// The raw `u32` floating point exception value.
-  pub const fn to_raw(self) -> u32 {
-    self.0
-  }
-  /// Turns a raw `u32` value into an exception mask without any checks.
+  /// Set four `f32` values into an `m128`.
   ///
-  /// ## Safety
+  /// Because of how little-endian works, this produces the **opposite** lane
+  /// order as you'd get compared to putting the arguments in to an array and
+  /// then using [`load`](m128::load) on that array. Same with using `transmute`
+  /// or similar.
+  #[inline(always)]
+  pub fn set(a: f32, b: f32, c: f32, d: f32) -> Self {
+    Self(unsafe { _mm_set_ps(a, b, c, d) })
+  }
+
+  /// Set the `f32` into all lanes.
+  #[inline(always)]
+  pub fn splat(a: f32) -> Self {
+    Self(unsafe { _mm_set1_ps(a) })
+  }
+
+  /// Set the value into lane 0, other lanes `0.0`.
+  #[inline(always)]
+  pub fn set0(a: f32) -> Self {
+    Self(unsafe { _mm_set_ss(a) })
+  }
+
+  /// Set four `f32` values into an `m128`, order reversed from normal
+  /// [`set`](m128::set).
+  #[inline(always)]
+  pub fn set_reverse(a: f32, b: f32, c: f32, d: f32) -> Self {
+    Self(unsafe { _mm_setr_ps(a, b, c, d) })
+  }
+
+  /// Lanewise square root.
+  #[inline(always)]
+  pub fn sqrt(self) -> Self {
+    Self(unsafe { _mm_sqrt_ps(self.0) })
+  }
+
+  /// Lane 0 square root, other lanes are `self`.
+  #[inline(always)]
+  pub fn sqrt0(self) -> Self {
+    Self(unsafe { _mm_sqrt_ss(self.0) })
+  }
+
+  /// Stores an `m128` into a 16-byte aligned `f32` array address.
   ///
-  /// You must not pass a `u32` with invalid bits set. Valid bits are any of the
-  /// constants listed in the [exception
-  /// flags](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#exception-flags)
-  /// section of [`_mm_setcsr`](core::arch::x86_64::_mm_setcsr). (Note: the link
-  /// is for the `x86_64` version, but this holds true on `x86` as well.)
-  pub const unsafe fn from_raw_unchecked(val: u32) -> Self {
-    Self(val)
+  /// This uses the same lane order as [`load`](m128::load).
+  #[inline(always)]
+  pub fn store(self, addr: &mut Align16<[f32; 4]>) {
+    let ptr: *mut f32 = addr as *mut Align16<[f32; 4]> as *mut f32;
+    unsafe { _mm_store_ps(ptr, self.0) }
   }
-  /// Check the `_MM_EXCEPT_INVALID` bit.
-  pub fn invalid(self) -> bool {
-    (self.0 & _MM_EXCEPT_INVALID) > 0
-  }
-  /// Set the `_MM_EXCEPT_INVALID` bit.
-  pub fn set_invalid(&mut self, invalid: bool) {
-    self.0 ^= (u32::from(invalid).wrapping_neg() ^ self.0) & _MM_EXCEPT_INVALID;
-  }
-  /// Check the `_MM_EXCEPT_DENORM` bit.
-  pub fn denorm(self) -> bool {
-    (self.0 & _MM_EXCEPT_DENORM) > 0
-  }
-  /// Set the `_MM_EXCEPT_DENORM` bit.
-  pub fn set_denorm(&mut self, denorm: bool) {
-    self.0 ^= (u32::from(denorm).wrapping_neg() ^ self.0) & _MM_EXCEPT_DENORM;
-  }
-  /// Check the `_MM_EXCEPT_DIV_ZERO` bit.
-  pub fn div_zero(self) -> bool {
-    (self.0 & _MM_EXCEPT_DIV_ZERO) > 0
-  }
-  /// Set the `_MM_EXCEPT_DIV_ZERO` bit.
-  pub fn set_div_zero(&mut self, div_zero: bool) {
-    self.0 ^= (u32::from(div_zero).wrapping_neg() ^ self.0) & _MM_EXCEPT_DIV_ZERO;
-  }
-  /// Check the `_MM_EXCEPT_OVERFLOW` bit.
-  pub fn overflow(self) -> bool {
-    (self.0 & _MM_EXCEPT_OVERFLOW) > 0
-  }
-  /// Set the `_MM_EXCEPT_OVERFLOW` bit.
-  pub fn set_overflow(&mut self, overflow: bool) {
-    self.0 ^= (u32::from(overflow).wrapping_neg() ^ self.0) & _MM_EXCEPT_OVERFLOW;
-  }
-  /// Check the `_MM_EXCEPT_UNDERFLOW` bit.
-  pub fn underflow(self) -> bool {
-    (self.0 & _MM_EXCEPT_UNDERFLOW) > 0
-  }
-  /// Set the `_MM_EXCEPT_UNDERFLOW` bit.
-  pub fn set_underflow(&mut self, underflow: bool) {
-    self.0 ^= (u32::from(underflow).wrapping_neg() ^ self.0) & _MM_EXCEPT_UNDERFLOW;
-  }
-  /// Check the `_MM_EXCEPT_INEXACT` bit.
-  pub fn inexact(self) -> bool {
-    (self.0 & _MM_EXCEPT_INEXACT) > 0
-  }
-  /// Set the `_MM_EXCEPT_INEXACT` bit.
-  pub fn set_inexact(&mut self, inexact: bool) {
-    self.0 ^= (u32::from(inexact).wrapping_neg() ^ self.0) & _MM_EXCEPT_INEXACT;
-  }
-}
 
-/// What floating point exceptions have been triggered.
-///
-/// This doesn't get cleared automatically. If you care about when exceptions
-/// occurred you'll have to manually clear the exception state before your
-/// calculation, do your calculation, and then check the state after.
-#[inline(always)]
-pub fn exception_state() -> ExceptionState {
-  ExceptionState(unsafe { _MM_GET_EXCEPTION_STATE() })
-}
-
-/// If "flush denormals to zero" mode is on.
-///
-/// Off by default, thread local.
-#[inline(always)]
-pub fn flush_zero_mode_on() -> bool {
-  _MM_FLUSH_ZERO_ON == unsafe { _MM_GET_FLUSH_ZERO_MODE() }
-}
-
-/// The floating point rounding modes that can be set.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum RoundingMode {
-  /// Round to nearest. If two values are equally close, round to even.
-  Nearest = _MM_ROUND_NEAREST,
-  /// Round to down to negative infinity.
-  Down = _MM_ROUND_DOWN,
-  /// Round to up to positive infinity.
-  Up = _MM_ROUND_UP,
-  /// Truncate the value towards zero.
-  Truncate = _MM_ROUND_TOWARD_ZERO,
-}
-impl Default for RoundingMode {
-  fn default() -> Self {
-    RoundingMode::Nearest
+  /// Stores lane 0 to all indexes of the array.
+  #[inline(always)]
+  pub fn store0_all(self, addr: &mut Align16<[f32; 4]>) {
+    let ptr: *mut f32 = addr as *mut Align16<[f32; 4]> as *mut f32;
+    unsafe { _mm_store_ps1(ptr, self.0) }
   }
-}
 
-/// Obtain the current [rounding
-/// mode](https://doc.rust-lang.org/core/arch/x86_64/fn._mm_setcsr.html#rounding-mode).
-///
-/// Defaults to `RoundingMode::Nearest`, thread local.
-#[inline(always)]
-pub fn rounding_mode() -> RoundingMode {
-  match unsafe { _MM_GET_ROUNDING_MODE() } {
-    _MM_ROUND_NEAREST => RoundingMode::Nearest,
-    _MM_ROUND_DOWN => RoundingMode::Down,
-    _MM_ROUND_UP => RoundingMode::Up,
-    _MM_ROUND_TOWARD_ZERO => RoundingMode::Truncate,
-    mode => unreachable!("The CPU has an illegal rounding mode value set:{}", mode),
+  /// Stores lane 0 to the address given.
+  #[inline(always)]
+  pub fn store0(self, addr: &mut f32) {
+    unsafe { _mm_store_ss(addr, self.0) }
   }
-}
 
-/// Obtains the value of the `MXCSR` control and status register.
-///
-/// This is has info on exception masks, exception state, flush to zero mode,
-/// and rounding mode, all rolled in to one value.
-#[inline(always)]
-pub fn control_status_register() -> u32 {
-  unsafe { _mm_getcsr() }
+  /// Stores an `m128` into a 16-byte aligned `f32` array address.
+  ///
+  /// This uses the same lane order as [`load_reverse`](m128::load_reverse).
+  #[inline(always)]
+  pub fn store_reverse(self, addr: &mut Align16<[f32; 4]>) {
+    let ptr: *mut f32 = addr as *mut Align16<[f32; 4]> as *mut f32;
+    unsafe { _mm_storer_ps(ptr, self.0) }
+  }
+
+  /// Stores an `m128` into a `f32` array address.
+  ///
+  /// This doesn't have the alignment requirements of [`store`](m128::store),
+  /// but the lane ordering is the same.
+  #[inline(always)]
+  pub fn store_unaligned(self, addr: &mut [f32; 4]) {
+    let ptr: *mut f32 = addr as *mut [f32; 4] as *mut f32;
+    unsafe { _mm_storeu_ps(ptr, self.0) }
+  }
+
+  /// Subtracts the 0th lanes without affecting the other lanes of `self.
+  #[inline(always)]
+  pub fn sub0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_sub_ss(self.0, rhs.0) })
+  }
+
+  /// Unpack and interleave the high lanes of `self` and `rhs`.
+  ///
+  /// ```txt
+  /// out[0] = self[2]
+  /// out[1] = rhs[2]
+  /// out[2] = self[3]
+  /// out[3] = rhs[3]
+  /// ```
+  #[inline(always)]
+  pub fn unpack_high(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_unpackhi_ps(self.0, rhs.0) })
+  }
+
+  /// Unpack and interleave the low lanes of `self` and `rhs`.
+  ///
+  /// ```txt
+  /// out[0] = self[0]
+  /// out[1] = rhs[0]
+  /// out[2] = self[1]
+  /// out[3] = rhs[1]
+  /// ```
+  #[inline(always)]
+  pub fn unpack_low(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_unpacklo_ps(self.0, rhs.0) })
+  }
 }
 
 /// Prefetch the cache line into all cache levels.
@@ -792,12 +738,76 @@ pub fn prefetch2(ptr: *const impl Sized) {
 
 /// Prefetch with non-temporal hint.
 ///
-/// When I asked a member of the Rust Language Team how they felt about
-/// non-temporal access, they simply replied with [the confounded
-/// emoji]https://emojipedia.org/confounded-face/). Non-temporal access is
-/// inherently racey-ish. I don't expose actual non-temporal access methods and
-/// functions, but a non-temporal _prefetch_ is still fine to do.
+/// Non-temporal access is inherently spooky with respect to the rest of the
+/// memory model. When I asked a member of the Rust Language Team how they felt
+/// about non-temporal access, they simply replied with [the confounded
+/// emoji]https://emojipedia.org/confounded-face/). I don't expose actual
+/// non-temporal store/load methods as safe operations, but a non-temporal
+/// _prefetch_ is still fine to do.
 #[inline(always)]
 pub fn prefetch_nta(ptr: *const impl Sized) {
   unsafe { _mm_prefetch(ptr as *const i8, _MM_HINT_NTA) }
+}
+
+/// Transposes, in place, the four `m128` values as if they formed a 4x4 Matrix.
+///
+/// The Intel guide lists the official implementation of this as being:
+/// ```txt
+/// __m128 tmp3, tmp2, tmp1, tmp0;
+/// tmp0 := _mm_unpacklo_ps(row0, row1);
+/// tmp2 := _mm_unpacklo_ps(row2, row3);
+/// tmp1 := _mm_unpackhi_ps(row0, row1);
+/// tmp3 := _mm_unpackhi_ps(row2, row3);
+/// row0 := _mm_movelh_ps(tmp0, tmp2);
+/// row1 := _mm_movehl_ps(tmp2, tmp0);
+/// row2 := _mm_movelh_ps(tmp1, tmp3);
+/// row3 := _mm_movehl_ps(tmp3, tmp1);
+/// ```
+#[inline(always)]
+pub fn transpose4(r0: &mut m128, r1: &mut m128, r2: &mut m128, r3: &mut m128) {
+  unsafe { _MM_TRANSPOSE4_PS(&mut r0.0, &mut r1.0, &mut r2.0, &mut r3.0) }
+}
+
+/// Shuffles around some `f32` lanes into a new `m128`
+///
+/// This is a macro and not a function because the shuffle pattern must be a
+/// compile time constant. The macro takes some requested indexed and then makes
+/// the correct shuffle pattern constant for you.
+///
+/// * `$a` and `$b` are any `m128` expressions.
+/// * `$i0a`, `$i1a`, `$i2b`, and `$i3b` must each be `0`, `1`, `2`, or `3`.
+///   Technically any `u32` literal will work, but only the lowest two bits are
+///   used so stick to `0`, `1`, `2`, or `3`.
+/// * Each lane in the output uses one of the lanes from an input. Like the
+///   names hint, indexes 0 and 1 will come from somewhere in `$a`, and indexes
+///   2 and 3 will come from somewhere in `$b`.
+///
+/// ```txt
+/// shuffle128!(a, b, [0, 2, 1, 3])
+/// ```
+///
+/// Would give an output of: `a[0], a[2], b[1], b[3]`
+#[macro_export]
+macro_rules! shuffle128 {
+  ($a:expr, $b:expr, [$i0a:literal,$i1a:literal,$i2b:literal,$i3b:literal]) => {{
+    // Keep only 2 bits per index
+    const I0A: u32 = $i0a & 0b11;
+    const I1A: u32 = $i1a & 0b11;
+    const I2B: u32 = $i2b & 0b11;
+    const I3B: u32 = $i3b & 0b11;
+    // pack it up little-endian
+    const IMM: i32 = (I0A | I1A << 2 | I2B << 4 | I3B << 6) as i32;
+    //
+    #[cfg(target_arch = "x86")]
+    use core::arch::x86::_mm_shuffle_ps;
+    #[cfg(target_arch = "x86")]
+    use $crate::arch::x86::m128;
+    //
+    #[cfg(target_arch = "x86_64")]
+    use core::arch::x86_64::_mm_shuffle_ps;
+    #[cfg(target_arch = "x86_64")]
+    use $crate::arch::x86_64::m128;
+    //
+    m128(unsafe { _mm_shuffle_ps($a.0, $b.0, IMM) })
+  }};
 }
