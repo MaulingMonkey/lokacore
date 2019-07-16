@@ -31,8 +31,13 @@ unsafe impl Pod for m128i {}
 impl core::fmt::Debug for m128i {
   /// Debug formats in offset order.
   ///
-  /// * Use `width` format specified to specify the lane count you want (default 1).
+  /// * Use `width` to specify the lane count you want (default 1).
   /// * Use `alternate` format specifier to give `uX` instead of `iX` output.
+  /// 
+  /// Eg, for 4 lanes of `u32`:
+  /// ```txt
+  /// format!("{:#4?}", m)
+  /// ```
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     match f.width() {
       Some(2) => {
