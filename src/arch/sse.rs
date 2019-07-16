@@ -798,11 +798,15 @@ macro_rules! shuffle128 {
     // pack it up little-endian
     const IMM: i32 = (I0A | I1A << 2 | I2B << 4 | I3B << 6) as i32;
     //
-    #[cfg(target_arch="x86")]
-    use ::{core::arch::x86::_mm_shuffle_ps, $crate::arch::x86::m128};
+    #[cfg(target_arch = "x86")]
+    use core::arch::x86::_mm_shuffle_ps;
+    #[cfg(target_arch = "x86")]
+    use $crate::arch::x86::m128;
     //
-    #[cfg(target_arch="x86_64")]
-    use ::{core::arch::x86_64::_mm_shuffle_ps, $crate::arch::x86_64::m128};
+    #[cfg(target_arch = "x86_64")]
+    use core::arch::x86_64::_mm_shuffle_ps;
+    #[cfg(target_arch = "x86_64")]
+    use $crate::arch::x86_64::m128;
     //
     m128(unsafe { _mm_shuffle_ps($a.0, $b.0, IMM) })
   }};
