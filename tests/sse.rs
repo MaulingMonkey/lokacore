@@ -1026,3 +1026,25 @@ fn m128_bitxor_assign() {
   let out: [u32; 4] = cast(a);
   assert_eq!(out, [max, max, 0, 0]);
 }
+
+#[test]
+fn m128_neg() {
+  let m: m128 = cast([5.0_f32, 6.0, 7.0, 8.0]);
+  let a: [f32; 4] = cast(m);
+  let neg_m: m128 = -m;
+  let neg_a: [f32; 4] = cast(neg_m);
+  assert_eq!([-5.0_f32, -6.0, -7.0, -8.0], neg_a);
+  let neg_neg_m: m128 = -neg_m;
+  let neg_neg_a: [f32; 4] = cast(neg_neg_m);
+  assert_eq!(a, neg_neg_a);
+}
+
+#[test]
+fn m128_not() {
+  let m: m128 = cast(core::u128::MAX);
+  let not_m_as_floats: [f32; 4] = cast(!m);
+  assert_eq!(not_m_as_floats, [0.0_f32, 0.0, 0.0, 0.0]);
+  let m: m128 = cast(0_u128);
+  let not_m_as_u128: u128 = cast(!m);
+  assert_eq!(not_m_as_u128, core::u128::MAX);
+}

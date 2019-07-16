@@ -172,6 +172,24 @@ impl BitXorAssign for m128 {
   }
 }
 
+impl Neg for m128 {
+  type Output = Self;
+  /// Lanewise `0.0 - self`
+  fn neg(self) -> Self {
+    Self(unsafe { _mm_sub_ps(_mm_setzero_ps(), self.0) })
+  }
+}
+
+impl Not for m128 {
+  type Output = Self;
+  /// Bitwise negation
+  fn not(self) -> Self {
+    let f: f32 = cast(-1_i32);
+    let b = m128::splat(f);
+    self ^ b
+  }
+}
+
 impl m128 {
   /// Adds the 0th lanes without affecting the other lanes of `self.
   #[inline(always)]
