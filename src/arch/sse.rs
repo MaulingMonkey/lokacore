@@ -14,8 +14,9 @@ use core::ops::*;
 ///   register in a debugger! Basically because of how little-endian works.
 /// * Most operations work per-lane, "lanewise".
 /// * Some operations work using lane 0 only. When appropriate, these have the
-///   same name as the lanewise version but with a `0` on the end. Eg: `cmp_eq`
-///   and `cmp_eq0`. The other lanes are simply copied forward from `self`.
+///   same name as the lanewise version but with a `0` on the end (example:
+///   `cmp_eq` and `cmp_eq0`). With the 0 version the other lanes are simply
+///   copied forward from `self`.
 /// * Comparisons give "bool-ish" output, where all bits 1 in a lane is true,
 ///   and all bits 0 in a lane is false. Unfortunately, all bits 1 with an `f32`
 ///   is one of the `NaN` values, and `NaN != NaN`, so it can be a little tricky
@@ -30,33 +31,77 @@ unsafe impl Pod for m128 {}
 
 impl core::fmt::Debug for m128 {
   /// Debug formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f32`
+  /// lane being formatted.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let a: [f32; 4] = cast(self.0);
-    write!(f, "m128({:?}, {:?}, {:?}, {:?})", a[0], a[1], a[2], a[3])
+    f.write_str("m128(")?;
+    core::fmt::Debug::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::Debug::fmt(&a[1], f)?;
+    f.write_str(", ")?;
+    core::fmt::Debug::fmt(&a[2], f)?;
+    f.write_str(", ")?;
+    core::fmt::Debug::fmt(&a[3], f)?;
+    f.write_str(")")
   }
 }
 
 impl core::fmt::Display for m128 {
   /// Display formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f32`
+  /// lane being formatted.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let a: [f32; 4] = cast(self.0);
-    write!(f, "m128({}, {}, {}, {})", a[0], a[1], a[2], a[3])
+    f.write_str("m128(")?;
+    core::fmt::Display::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::Display::fmt(&a[1], f)?;
+    f.write_str(", ")?;
+    core::fmt::Display::fmt(&a[2], f)?;
+    f.write_str(", ")?;
+    core::fmt::Display::fmt(&a[3], f)?;
+    f.write_str(")")
   }
 }
 
 impl core::fmt::LowerExp for m128 {
   /// LowerExp formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f32`
+  /// lane being formatted.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let a: [f32; 4] = cast(self.0);
-    write!(f, "m128({:e}, {:e}, {:e}, {:e})", a[0], a[1], a[2], a[3])
+    f.write_str("m128(")?;
+    core::fmt::LowerExp::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::LowerExp::fmt(&a[1], f)?;
+    f.write_str(", ")?;
+    core::fmt::LowerExp::fmt(&a[2], f)?;
+    f.write_str(", ")?;
+    core::fmt::LowerExp::fmt(&a[3], f)?;
+    f.write_str(")")
   }
 }
 
 impl core::fmt::UpperExp for m128 {
   /// UpperExp formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f32`
+  /// lane being formatted.
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let a: [f32; 4] = cast(self.0);
-    write!(f, "m128({:E}, {:E}, {:E}, {:E})", a[0], a[1], a[2], a[3])
+    f.write_str("m128(")?;
+    core::fmt::UpperExp::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::UpperExp::fmt(&a[1], f)?;
+    f.write_str(", ")?;
+    core::fmt::UpperExp::fmt(&a[2], f)?;
+    f.write_str(", ")?;
+    core::fmt::UpperExp::fmt(&a[3], f)?;
+    f.write_str(")")
   }
 }
 

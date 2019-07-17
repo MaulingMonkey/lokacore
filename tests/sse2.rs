@@ -319,3 +319,70 @@ fn m128i_upper_hex() {
     )
   );
 }
+
+#[test]
+fn m128d_debug() {
+  let m: m128d = cast([5.0_f64, 6.0]);
+  assert_eq!(&format!("{:?}", m), "m128d(5.0, 6.0)");
+}
+
+#[test]
+fn m128d_display() {
+  let m: m128d = cast([5.0_f64, 6.0]);
+  assert_eq!(&format!("{}", m), "m128d(5, 6)");
+}
+
+#[test]
+fn m128d_lower_exp() {
+  let m: m128d = cast([5.0_f64, 6.0]);
+  assert_eq!(&format!("{:e}", m), "m128d(5e0, 6e0)");
+}
+
+#[test]
+fn m128d_upper_exp() {
+  let m: m128d = cast([5.0_f64, 6.0]);
+  assert_eq!(&format!("{:E}", m), "m128d(5E0, 6E0)");
+}
+
+#[test]
+fn m128_round_i32x4() {
+  let m: m128 = cast([5.0_f32, 6.1, 7.9, 8.5]);
+  let mi: m128i = m.round_i32x4();
+  let mi_arr: [i32; 4] = cast(mi);
+  assert_eq!(mi_arr, [5, 6, 8, 8]);
+}
+
+#[test]
+fn m128_truncate_i32x4() {
+  let m: m128 = cast([5.0_f32, 6.1, 7.9, 8.5]);
+  let mi: m128i = m.truncate_i32x4();
+  let mi_arr: [i32; 4] = cast(mi);
+  assert_eq!(mi_arr, [5, 6, 7, 8]);
+}
+
+#[test]
+fn m128_round_f64x2() {
+  let m: m128 = cast([5.0_f32, 6.5, 7.9, 8.5]);
+  let md: m128d = m.round_f64x2();
+  let md_arr: [f64; 2] = cast(md);
+  assert_eq!(md_arr, [5.0_f64, 6.5]);
+}
+
+#[test]
+fn m128_bitand() {
+  let max = core::u32::MAX;
+  let a: m128i = cast([0, max, max, 0]);
+  let b: m128i = cast([max, 0, max, 0]);
+  let out: [u32; 4] = cast(a & b);
+  assert_eq!(out, [0, 0, max, 0]);
+}
+
+#[test]
+fn m128_bitand_assign() {
+  let max = core::u32::MAX;
+  let mut a: m128i = cast([0, max, max, 0]);
+  let b: m128i = cast([max, 0, max, 0]);
+  a &= b;
+  let out: [u32; 4] = cast(a);
+  assert_eq!(out, [0, 0, max, 0]);
+}

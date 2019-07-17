@@ -3,6 +3,36 @@
 use super::*;
 use core::ops::*;
 
+impl m128 {
+  /// This rounds each lane to `i32`.
+  #[inline(always)]
+  pub fn round_i32x4(self) -> m128i {
+    m128i(unsafe { _mm_cvtps_epi32(self.0) })
+  }
+
+  /// This truncates each lane to `i32`.
+  #[inline(always)]
+  pub fn truncate_i32x4(self) -> m128i {
+    m128i(unsafe { _mm_cvttps_epi32(self.0) })
+  }
+
+  /// This "rounds" the lower two lanes to `f64`.
+  ///
+  /// `f64` has more precision than `f32` so there's no actually rounding going
+  /// on here, but I'll just call it rounding so that the naming stays
+  /// consistent.
+  #[inline(always)]
+  pub fn round_f64x2(self) -> m128d {
+    m128d(unsafe { _mm_cvtps_pd(self.0) })
+  }
+
+  /// Lane 0 is the low `f64` of `rhs` rounded to `f32`, other lanes are `self`.
+  #[inline(always)]
+  pub fn f64_round_copy0(self, rhs: m128d) -> Self {
+    Self(unsafe { _mm_cvtsd_ss(self.0, rhs.0) })
+  }
+}
+
 /// A 128-bit SIMD value. Integral data, lanes determined by each op.
 ///
 /// * This documentation numbers the lanes based on the index you'd need to use
@@ -473,5 +503,107 @@ impl core::fmt::UpperHex for m128i {
         }
       }
     }
+  }
+}
+
+impl BitAnd for m128i {
+  type Output = Self;
+  /// Bitwise AND.
+  #[inline(always)]
+  fn bitand(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_and_si128(self.0, rhs.0) })
+  }
+}
+impl BitAndAssign for m128i {
+  /// Bitwise AND.
+  #[inline(always)]
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_and_si128(self.0, rhs.0) };
+  }
+}
+
+
+/// A 128-bit SIMD value. Always used as `f64x2`.
+///
+/// * This documentation numbers the lanes based on the index you'd need to use
+///   to access that lane if the value were cast to an array.
+/// * This is also the way that the type is printed out using
+///   [`Debug`](core::fmt::Debug), [`Display`](core::fmt::Display),
+///   [`LowerExp`](core::fmt::LowerExp), and [`UpperExp`](core::fmt::UpperExp).
+/// * This is not necessarily the ordering you'll see if you look an `xmm`
+///   register in a debugger! Basically because of how little-endian works.
+/// * Most operations work per-lane, "lanewise".
+/// * Some operations work using lane 0 only. When appropriate, these have the
+///   same name as the lanewise version but with a `0` on the end. Eg: `cmp_eq`
+///   and `cmp_eq0`. The other lanes are simply copied forward from `self`.
+/// * Comparisons give "bool-ish" output, where all bits 1 in a lane is true,
+///   and all bits 0 in a lane is false. Unfortunately, all bits 1 with an `f32`
+///   is one of the `NaN` values, and `NaN != NaN`, so it can be a little tricky
+///   to work with until you're used to it.
+#[derive(Clone, Copy)]
+#[allow(bad_style)]
+#[repr(transparent)]
+pub struct m128d(pub __m128d);
+
+unsafe impl Zeroable for m128d {}
+unsafe impl Pod for m128d {}
+
+impl core::fmt::Debug for m128d {
+  /// Debug formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f64`
+  /// lane being formatted.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let a: [f64; 2] = cast(self.0);
+    f.write_str("m128d(")?;
+    core::fmt::Debug::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::Debug::fmt(&a[1], f)?;
+    f.write_str(")")
+  }
+}
+
+impl core::fmt::Display for m128d {
+  /// Display formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f64`
+  /// lane being formatted.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let a: [f64; 2] = cast(self.0);
+    f.write_str("m128d(")?;
+    core::fmt::Display::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::Display::fmt(&a[1], f)?;
+    f.write_str(")")
+  }
+}
+
+impl core::fmt::LowerExp for m128d {
+  /// LowerExp formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f64`
+  /// lane being formatted.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let a: [f64; 2] = cast(self.0);
+    f.write_str("m128d(")?;
+    core::fmt::LowerExp::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::LowerExp::fmt(&a[1], f)?;
+    f.write_str(")")
+  }
+}
+
+impl core::fmt::UpperExp for m128d {
+  /// UpperExp formats in offset order.
+  ///
+  /// All `Formatter` information is passed directly to each individual `f64`
+  /// lane being formatted.
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    let a: [f64; 2] = cast(self.0);
+    f.write_str("m128d(")?;
+    core::fmt::UpperExp::fmt(&a[0], f)?;
+    f.write_str(", ")?;
+    core::fmt::UpperExp::fmt(&a[1], f)?;
+    f.write_str(")")
   }
 }
