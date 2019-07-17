@@ -235,6 +235,7 @@ impl Not for m128 {
   }
 }
 
+/// # SSE Operations
 impl m128 {
   /// Adds the 0th lanes without affecting the other lanes of `self.
   #[inline(always)]

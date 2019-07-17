@@ -386,3 +386,69 @@ fn m128_bitand_assign() {
   let out: [u32; 4] = cast(a);
   assert_eq!(out, [0, 0, max, 0]);
 }
+
+#[test]
+fn m128_cast_m128i() {
+  let m: m128 = cast(12_345_678_u128);
+  let mi: m128i = m.cast_m128i();
+  let mi_bits: u128 = cast(mi);
+  assert_eq!(mi_bits, 12_345_678_u128);
+}
+
+#[test]
+fn m128d_add() {
+  let a: m128d = cast([5.0_f64, 6.0]);
+  let b: m128d = cast([-8.0_f64, 4.0]);
+  let out: [f64; 2] = cast(a + b);
+  assert_eq!(out, [-3.0, 10.0]);
+}
+
+#[test]
+fn m128d_add_assign() {
+  let mut a: m128d = cast([5.0_f64, 6.0]);
+  let b: m128d = cast([-8.0_f64, 4.0]);
+  a += b;
+  let out: [f64; 2] = cast(a);
+  assert_eq!(out, [-3.0, 10.0]);
+}
+
+#[test]
+fn m128d_add0() {
+  let a: m128d = cast([5.0_f64, 6.0]);
+  let b: m128d = cast([-8.0_f64, 4.0]);
+  let out: [f64; 2] = cast(a.add0(b));
+  assert_eq!(out, [-3.0, 6.0]);
+}
+
+#[test]
+fn m128d_bitand() {
+  let a: m128d = cast([core::u64::MAX, 0]);
+  let b: m128d = cast([core::u64::MAX, core::u64::MAX]);
+  let out: [u64; 2] = cast(a & b);
+  assert_eq!(out, [core::u64::MAX, 0]);
+}
+
+#[test]
+fn m128d_bitand_assign() {
+  let mut a: m128d = cast([core::u64::MAX, 0]);
+  let b: m128d = cast([core::u64::MAX, core::u64::MAX]);
+  a &= b;
+  let out: [u64; 2] = cast(a);
+  assert_eq!(out, [core::u64::MAX, 0]);
+}
+
+#[test]
+fn m128d_andnot() {
+  let a: m128d = cast([core::u64::MAX, 0]);
+  let b: m128d = cast([core::u64::MAX, core::u64::MAX]);
+  let out: [u64; 2] = cast(a.andnot(b));
+  assert_eq!(out, [0, core::u64::MAX]);
+}
+
+#[test]
+fn m128d_cast_m128i() {
+  let m: m128d = cast(12_345_678_u128);
+  let mi: m128i = m.cast_m128i();
+  let mi_bits: u128 = cast(mi);
+  assert_eq!(mi_bits, 12_345_678_u128);
+}

@@ -3,6 +3,7 @@
 use super::*;
 use core::ops::*;
 
+/// # SSE2 Operations
 impl m128 {
   /// This rounds each lane to `i32`.
   #[inline(always)]
@@ -30,6 +31,12 @@ impl m128 {
   #[inline(always)]
   pub fn f64_round_copy0(self, rhs: m128d) -> Self {
     Self(unsafe { _mm_cvtsd_ss(self.0, rhs.0) })
+  }
+
+  /// Cast the bits of this `m128` directly to `m128i` without modification.
+  #[inline(always)]
+  pub fn cast_m128i(self) -> m128i {
+    m128i(unsafe { _mm_castps_si128(self.0) })
   }
 }
 
@@ -522,6 +529,10 @@ impl BitAndAssign for m128i {
   }
 }
 
+/// # SSE2 Operations
+impl m128d {
+  //
+}
 
 /// A 128-bit SIMD value. Always used as `f64x2`.
 ///
@@ -605,5 +616,58 @@ impl core::fmt::UpperExp for m128d {
     f.write_str(", ")?;
     core::fmt::UpperExp::fmt(&a[1], f)?;
     f.write_str(")")
+  }
+}
+
+impl Add for m128d {
+  type Output = Self;
+  /// Lanewise addition.
+  #[inline(always)]
+  fn add(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_add_pd(self.0, rhs.0) })
+  }
+}
+impl AddAssign for m128d {
+  /// Lanewise addition.
+  #[inline(always)]
+  fn add_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_add_pd(self.0, rhs.0) };
+  }
+}
+
+impl BitAnd for m128d {
+  type Output = Self;
+  /// Bitwise AND.
+  #[inline(always)]
+  fn bitand(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_and_pd(self.0, rhs.0) })
+  }
+}
+impl BitAndAssign for m128d {
+  /// Bitwise AND.
+  #[inline(always)]
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_and_pd(self.0, rhs.0) };
+  }
+}
+
+/// # SSE2 Operations
+impl m128d {
+  /// Adds the low lane, high lane unaffected.
+  #[inline(always)]
+  pub fn add0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_add_sd(self.0, rhs.0) })
+  }
+
+  /// Bitwise `(!self) & rhs`
+  #[inline(always)]
+  pub fn andnot(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_andnot_pd(self.0, rhs.0) })
+  }
+
+  /// Cast the bits of this `m128d` directly to `m128i` without modification.
+  #[inline(always)]
+  pub fn cast_m128i(self) -> m128i {
+    m128i(unsafe { _mm_castpd_si128(self.0) })
   }
 }
