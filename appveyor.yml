@@ -7,7 +7,6 @@ branches:
     - trying
     - master
     - dev
-    - lokathor
 
 matrix:
   fast_finish: true
