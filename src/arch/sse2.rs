@@ -21,7 +21,7 @@ impl m128 {
   ///
   /// `f64` has more precision than `f32` so there's no actually rounding going
   /// on here, but I'll just call it rounding so that the naming stays
-  /// consistent.
+  /// consistent with other similar methods.
   #[inline(always)]
   pub fn round_f64x2(self) -> m128d {
     m128d(unsafe { _mm_cvtps_pd(self.0) })
@@ -669,5 +669,151 @@ impl m128d {
   #[inline(always)]
   pub fn cast_m128i(self) -> m128i {
     m128i(unsafe { _mm_castpd_si128(self.0) })
+  }
+
+  /// Lanewise `self == rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_eq(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpeq_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self == rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_eq0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpeq_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self >= rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ge(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpge_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self >= rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ge0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpge_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self > rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_gt(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpgt_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self > rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_gt0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpgt_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self <= rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_le(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmple_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self <= rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_le0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmple_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self < rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_lt(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmplt_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self < rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_lt0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmplt_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self != rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ne(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpneq_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self != rhs`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ne0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpneq_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `!(self >= rhs)`, bool-ish output
+  /// 
+  /// Also, 3rd Impact and all that, of course.
+  #[inline(always)]
+  pub fn cmp_nge(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpnge_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `!(self >= rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nge0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpnge_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `!(self > rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ngt(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpngt_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `!(self > rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ngt0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpngt_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `!(self <= rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nle(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpnle_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `!(self <= rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nle0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpnle_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `!(self < rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nlt(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpnlt_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `!(self < rhs)`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nlt0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpnlt_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self.not_nan() & rhs.not_nan()`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ordinary(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpord_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self.not_nan() & rhs.not_nan()`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_ordinary0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpord_sd(self.0, rhs.0) })
+  }
+
+  /// Lanewise `self.is_nan() | rhs.is_nan()`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nan(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpunord_pd(self.0, rhs.0) })
+  }
+
+  /// Lane 0: `self.is_nan() | rhs.is_nan()`, bool-ish output
+  #[inline(always)]
+  pub fn cmp_nan0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_cmpunord_sd(self.0, rhs.0) })
   }
 }

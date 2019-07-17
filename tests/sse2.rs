@@ -452,3 +452,191 @@ fn m128d_cast_m128i() {
   let mi_bits: u128 = cast(mi);
   assert_eq!(mi_bits, 12_345_678_u128);
 }
+
+#[test]
+fn m128d_cmp_eq() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([5.0, 6.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_eq(b)), [max, 0]);
+}
+
+#[test]
+fn m128d_cmp_eq0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([5.0, 6.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_eq0(b)), [max, 6.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_ge() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([5.0, 12.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ge(b)), [max, max]);
+}
+
+#[test]
+fn m128d_cmp_ge0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([5.0, 6.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ge0(b)), [max, 6.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_gt() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([5.0, 12.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_gt(b)), [0, max]);
+}
+
+#[test]
+fn m128d_cmp_gt0() {
+  let a: m128d = cast([5.0, 6.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_gt0(b)), [0, 6.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_le() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_le(b)), [max, max]);
+}
+
+#[test]
+fn m128d_cmp_le0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_le0(b)), [max, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_lt() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_lt(b)), [max, 0]);
+}
+
+#[test]
+fn m128d_cmp_lt0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_lt0(b)), [max, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_ne() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ne(b)), [max, 0]);
+}
+
+#[test]
+fn m128d_cmp_ne0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ne0(b)), [max, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_nge() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nge(b)), [max, 0]);
+}
+
+#[test]
+fn m128d_cmp_nge0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nge0(b)), [max, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_ngt() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ngt(b)), [max, max]);
+}
+
+#[test]
+fn m128d_cmp_ngt0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ngt0(b)), [max, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_nle() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nle(b)), [0, 0]);
+}
+
+#[test]
+fn m128d_cmp_nle0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nle0(b)), [0, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_nlt() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nlt(b)), [0, max]);
+}
+
+#[test]
+fn m128d_cmp_nlt0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nlt0(b)), [0, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_ordinary() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ordinary(b)), [max, max]);
+}
+
+#[test]
+fn m128d_cmp_ordinary0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_ordinary0(b)), [max, 7.0_f64.to_bits()]);
+}
+
+#[test]
+fn m128d_cmp_nan() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0_f64.to_bits(), max]);
+  let b: m128d = cast([5.0, 7.0]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nan(b)), [0, max]);
+}
+
+#[test]
+fn m128d_cmp_nan0() {
+  let max = core::u64::MAX;
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([max, 7.0_f64.to_bits()]);
+  assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nan0(b)), [max, 7.0_f64.to_bits()]);
+}
