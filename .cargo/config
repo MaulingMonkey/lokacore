@@ -1,2 +1,39 @@
 [build]
 rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=native"]
+
+
+
+# Building for Android requires different settings for windows vs linux hosts.
+# See scripts/*-android/.cargo/config for host-specific android cargo config.
+
+
+
+# iOS targets can't use target-cpu=native without warnings
+
+[target.aarch64-apple-ios] # Apple A7 and later
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+[target.armv7-apple-ios] # Apple A5 and earlier
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+[target.armv7s-apple-ios] # Apple A6 and A6X chips (iPhone 5, iPhone 5C and iPad 4)
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+[target.i386-apple-ios] # Emulators
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+[target.x86_64-apple-ios] # Emulators
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+
+
+# WASM targets can't use target-cpu=native without warnings either
+
+[target.wasm32-unknown-emscripten]
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
+
+[target.wasm32-wasi]
+rustflags = ["-C","target-feature=+crt-static","-C","target-cpu=generic"]
