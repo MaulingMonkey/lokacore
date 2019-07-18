@@ -816,4 +816,40 @@ impl m128d {
   pub fn cmp_nan0(self, rhs: Self) -> Self {
     Self(unsafe { _mm_cmpunord_sd(self.0, rhs.0) })
   }
+
+  /// Lane 0: `self == rhs`, 0 or 1 `i32` output.
+  #[inline(always)]
+  pub fn cmpi_eq0(self, rhs: Self) -> i32 {
+    unsafe { _mm_comieq_sd(self.0, rhs.0) }
+  }
+
+  /// Lane 0: `self >= rhs`, 0 or 1 `i32` output.
+  #[inline(always)]
+  pub fn cmpi_ge0(self, rhs: Self) -> i32 {
+    unsafe { _mm_comige_sd(self.0, rhs.0) }
+  }
+
+  /// Lane 0: `self > rhs`, 0 or 1 `i32` output.
+  #[inline(always)]
+  pub fn cmpi_gt0(self, rhs: Self) -> i32 {
+    unsafe { _mm_comigt_sd(self.0, rhs.0) }
+  }
+
+  /// Lane 0: `self <= rhs`, 0 or 1 `i32` output.
+  #[inline(always)]
+  pub fn cmpi_le0(self, rhs: Self) -> i32 {
+    unsafe { _mm_comile_sd(self.0, rhs.0) }
+  }
+
+  /// Lane 0: `self < rhs`, 0 or 1 `i32` output.
+  #[inline(always)]
+  pub fn cmpi_lt0(self, rhs: Self) -> i32 {
+    unsafe { _mm_comilt_sd(self.0, rhs.0) }
+  }
+
+  /// Lane 0: `self != rhs`, 0 or 1 `i32` output.
+  #[inline(always)]
+  pub fn cmpi_ne0(self, rhs: Self) -> i32 {
+    unsafe { _mm_comineq_sd(self.0, rhs.0) }
+  }
 }

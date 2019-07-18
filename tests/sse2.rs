@@ -640,3 +640,45 @@ fn m128d_cmp_nan0() {
   let b: m128d = cast([max, 7.0_f64.to_bits()]);
   assert_eq!(cast::<m128d, [u64;2]>(a.cmp_nan0(b)), [max, 7.0_f64.to_bits()]);
 }
+
+#[test]
+fn m128d_cmpi_eq0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([4.0, 5.0]);
+  assert_eq!(a.cmpi_eq0(b), 1);
+}
+
+#[test]
+fn m128d_cmpi_ge0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([4.0, 5.0]);
+  assert_eq!(a.cmpi_ge0(b), 1);
+}
+
+#[test]
+fn m128d_cmpi_gt0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([4.0, 5.0]);
+  assert_eq!(a.cmpi_gt0(b), 0);
+}
+
+#[test]
+fn m128d_cmpi_le0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([4.0, 5.0]);
+  assert_eq!(a.cmpi_le0(b), 1);
+}
+
+#[test]
+fn m128d_cmpi_lt0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([4.0, 5.0]);
+  assert_eq!(a.cmpi_lt0(b), 0);
+}
+
+#[test]
+fn m128d_cmpi_ne0() {
+  let a: m128d = cast([4.0, 7.0]);
+  let b: m128d = cast([4.0, 5.0]);
+  assert_eq!(a.cmpi_ne0(b), 0);
+}
