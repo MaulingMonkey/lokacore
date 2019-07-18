@@ -651,6 +651,22 @@ impl BitAndAssign for m128d {
   }
 }
 
+impl Div for m128d {
+  type Output = Self;
+  /// Lanewise division.
+  #[inline(always)]
+  fn div(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_div_pd(self.0, rhs.0) })
+  }
+}
+impl DivAssign for m128d {
+  /// Lanewise division.
+  #[inline(always)]
+  fn div_assign(&mut self, rhs: Self) {
+    self.0 = unsafe { _mm_div_pd(self.0, rhs.0) };
+  }
+}
+
 /// # SSE2 Operations
 impl m128d {
   /// Adds the low lane, high lane unaffected.
@@ -851,5 +867,79 @@ impl m128d {
   #[inline(always)]
   pub fn cmpi_ne0(self, rhs: Self) -> i32 {
     unsafe { _mm_comineq_sd(self.0, rhs.0) }
+  }
+
+  /// Round the lanes to `i32` and place as the two lower lanes of an [`m128i`]
+  #[inline(always)]
+  pub fn round_i32x4(self) -> m128i {
+    m128i(unsafe { _mm_cvtpd_epi32(self.0) })
+  }
+
+  /// Round the lanes to `f32` and place as the two lower lanes of an [`m128`]
+  #[inline(always)]
+  pub fn round_f32x4(self) -> m128 {
+    m128(unsafe { _mm_cvtpd_ps(self.0) })
+  }
+
+  /// Get the lower lane value as `f64`.
+  #[inline(always)]
+  pub fn extract0(self) -> f64 {
+    unsafe { _mm_cvtsd_f64(self.0) }
+  }
+
+  /// Round lower lane to `i32` and return it.
+  #[inline(always)]
+  pub fn round_i32_extract0(self) -> i32 {
+    unsafe { _mm_cvtsd_si32(self.0) }
+  }
+
+  /// Round lower lane to `i64` and return it.
+  #[cfg(target_arch="x86_64")]
+  #[inline(always)]
+  pub fn round_i64_extract0(self) -> i64 {
+    unsafe { _mm_cvtsd_si64(self.0) }
+  }
+
+  /// Replace lane 0 with `i32` rounded to `f64`, lane 1 unaffected.
+  #[inline(always)]
+  pub fn replace0_with_i32(self, rhs: i32) -> Self {
+    m128d(unsafe { _mm_cvtsi32_sd(self.0, rhs) })
+  }
+
+  /// Replace lane 0 with `i64` rounded to `f64`, lane 1 unaffected.
+  #[inline(always)]
+  pub fn replace0_with_i64(self, rhs: i64) -> Self {
+    m128d(unsafe { _mm_cvtsi64_sd(self.0, rhs) })
+  }
+
+  /// Replace lane 0 with `rhs` low `f32` rounded to `f64`, lane 1 unaffected.
+  #[inline(always)]
+  pub fn replace0_with_f32(self, rhs: m128) -> Self {
+    m128d(unsafe { _mm_cvtss_sd(self.0, rhs.0) })
+  }
+
+  /// Truncate the lanes to `i32` and place as the two lower lanes of an [`m128i`]
+  #[inline(always)]
+  pub fn truncate_i32x4(self) -> m128i {
+    m128i(unsafe { _mm_cvttpd_epi32(self.0) })
+  }
+
+  /// Truncate lane 0 to `i32` and return it.
+  #[inline(always)]
+  pub fn truncate0_i32(self) -> i32 {
+    unsafe { _mm_cvttsd_si32(self.0) }
+  }
+
+  /// Truncate lane 0 to `i64` and return it.
+  #[cfg(target_arch="x86_64")]
+  #[inline(always)]
+  pub fn truncate0_i64(self) -> i64 {
+    unsafe { _mm_cvttsd_si64(self.0) }
+  }
+
+  /// Divides the low lane, high lane unaffected.
+  #[inline(always)]
+  pub fn div0(self, rhs: Self) -> Self {
+    Self(unsafe { _mm_div_sd(self.0, rhs.0) })
   }
 }

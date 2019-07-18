@@ -682,3 +682,109 @@ fn m128d_cmpi_ne0() {
   let b: m128d = cast([4.0, 5.0]);
   assert_eq!(a.cmpi_ne0(b), 0);
 }
+
+#[test]
+fn m128d_round_i32x4() {
+  let a: m128d = cast([4.8, 7.1]);
+  let r: m128i = a.round_i32x4();
+  let r_i32s: [i32;4] = cast(r);
+  assert_eq!(r_i32s, [5, 7, 0, 0]);
+}
+
+#[test]
+fn m128d_round_f32x4() {
+  let a: m128d = cast([4.5, 7.1]);
+  let r: m128 = a.round_f32x4();
+  let r_f32s: [f32;4] = cast(r);
+  assert_eq!(r_f32s, [4.5, 7.1, 0.0, 0.0]);
+}
+
+#[test]
+#[allow(clippy::float_cmp)]
+fn m128d_extract0() {
+  let a: m128d = cast([4.5, 7.1]);
+  assert_eq!(a.extract0(), 4.5_f64);
+}
+
+#[test]
+fn m128d_round_i32_extract0() {
+  let a: m128d = cast([4.5, 7.1]);
+  assert_eq!(a.round_i32_extract0(), 4_i32);
+}
+
+#[test]
+#[cfg(target_arch="x86_64")]
+fn m128d_round_i64_extract0() {
+  let a: m128d = cast([4.5, 7.1]);
+  assert_eq!(a.round_i64_extract0(), 4_i64);
+}
+
+#[test]
+fn m128d_replace0_with_i32() {
+  let a: m128d = cast([4.5, 7.1]);
+  let b: m128d = a.replace0_with_i32(20_i32);
+  let c: [f64;2] = cast(b);
+  assert_eq!(c, [20.0, 7.1]);
+}
+
+#[test]
+fn m128d_replace0_with_i64() {
+  let a: m128d = cast([4.5, 7.1]);
+  let b: m128d = a.replace0_with_i64(20_i64);
+  let c: [f64;2] = cast(b);
+  assert_eq!(c, [20.0, 7.1]);
+}
+
+#[test]
+fn m128d_replace0_with_f32() {
+  let a: m128d = cast([4.5, 7.1]);
+  let b: m128d = a.replace0_with_f32(m128::set0(8.0));
+  let c: [f64;2] = cast(b);
+  assert_eq!(c, [8.0, 7.1]);
+}
+
+#[test]
+fn m128d_truncate_i32x4() {
+  let a: m128d = cast([4.8, 7.1]);
+  let r: m128i = a.truncate_i32x4();
+  let r_i32s: [i32;4] = cast(r);
+  assert_eq!(r_i32s, [4, 7, 0, 0]);
+}
+
+#[test]
+fn m128d_truncate0_i32() {
+  let a: m128d = cast([4.5, 7.1]);
+  assert_eq!(a.truncate0_i32(), 4_i32);
+}
+
+#[test]
+#[cfg(target_arch="x86_64")]
+fn m128d_truncate0_i64() {
+  let a: m128d = cast([4.5, 7.1]);
+  assert_eq!(a.truncate0_i64(), 4_i64);
+}
+
+#[test]
+fn m128d_div() {
+  let a: m128d = cast([5.0_f64, 6.0]);
+  let b: m128d = cast([-2.0_f64, 3.0]);
+  let out: [f64; 2] = cast(a / b);
+  assert_eq!(out, [-2.5, 2.0]);
+}
+
+#[test]
+fn m128d_div_assign() {
+  let mut a: m128d = cast([5.0_f64, 6.0]);
+  let b: m128d = cast([-2.0_f64, 3.0]);
+  a /= b;
+  let out: [f64; 2] = cast(a);
+  assert_eq!(out, [-2.5, 2.0]);
+}
+
+#[test]
+fn m128d_div0() {
+  let a: m128d = cast([5.0_f64, 6.0]);
+  let b: m128d = cast([2.0_f64, 4.0]);
+  let out: [f64; 2] = cast(a.div0(b));
+  assert_eq!(out, [2.5, 6.0]);
+}
