@@ -25,6 +25,14 @@ elif [[ "$TARGET" == *"-apple-ios" || "$TARGET" == "wasm32-wasi" ]]; then
   #   iOS simulator setup/teardown is complicated
   #   cargo-web doesn't support wasm32-wasi yet, nor can wasm-pack test specify a target
 
+elif [[ "$TARGET" == *"-unknown-linux-gnueabihf" ]]; then
+  #sudo apt-get update
+  #sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+  pushd generic-cross
+    cargo build --target=$TARGET $FLAGS
+    # Don't test
+  popd
+
 elif [[ "$TARGET" != "" ]]; then
   pushd generic-cross
     cargo build --target=$TARGET $FLAGS
