@@ -1,0 +1,4 @@
+# Don't generate CPU mismatch warnings when cross-compiling
+
+[build]
+rustflags = ["-C","target-cpu=generic"]

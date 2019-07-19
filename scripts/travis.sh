@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 rustup component add clippy
@@ -24,10 +26,13 @@ elif [[ "$TARGET" == *"-apple-ios" || "$TARGET" == "wasm32-wasi" ]]; then
   #   cargo-web doesn't support wasm32-wasi yet, nor can wasm-pack test specify a target
 
 elif [[ "$TARGET" != "" ]]; then
-  cargo build --target=$TARGET $FLAGS
-  cargo test  --target=$TARGET $FLAGS
+  pushd generic-cross
+    cargo build --target=$TARGET $FLAGS
+    cargo test  --target=$TARGET $FLAGS
+  popd
 
 else
+  # Push nothing, target host CPU architecture
   cargo build $FLAGS
   cargo test  $FLAGS
 

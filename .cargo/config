@@ -27,6 +27,11 @@ rustflags = ["-C","target-cpu=generic"]
 
 
 
+# Linux targets may or may not be cross-compiling.  Assume we're not.
+# Travis will use scripts/generic-cross/.cargo/config to avoid warnings when cross compiling.
+
+
+
 # WASM targets can't use target-cpu=native without warnings either
 
 [target.wasm32-unknown-emscripten]
